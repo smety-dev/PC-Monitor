@@ -11,6 +11,7 @@ from version import __version__
 from hardware_metrics import Sampler
 from process_metrics import ProcessSampler
 from process_ui import ProcessPage
+from logging_ui import LoggingPage
 from dashboard_ui import (
     BG, PANEL, TRACK, TEXT, MUTED, BLUE, ORANGE, GREEN, FONT,
     Gauge, ScrollPage, card, label, configure_style,
@@ -132,11 +133,13 @@ page_host.pack(fill="both", expand=True)
 pages = {}
 buttons = {}
 active_page = "Přehled"
-for name in ("Přehled", "Procesor", "Disky", "Síť", "Procesy"):
+for name in ("Přehled", "Procesor", "Disky", "Síť", "Procesy", "Záznam"):
     if name == "Přehled":
         pages[name] = tk.Frame(page_host, bg=BG)
     elif name == "Procesy":
         pages[name] = ProcessPage(page_host)
+    elif name == "Záznam":
+        pages[name] = LoggingPage(page_host)
     else:
         pages[name] = ScrollPage(page_host)
 
@@ -149,7 +152,7 @@ def show_page(name):
                                fg=BLUE if key == name else TEXT)
     pages[name].pack(fill="both", expand=True)
     heading.configure(text={"Přehled": "Přehled systému", "Procesor": "Procesor",
-                            "Disky": "Úložiště", "Síť": "Síťový provoz", "Procesy": "Správce procesů"}[name])
+                            "Disky": "Úložiště", "Síť": "Síťový provoz", "Procesy": "Správce procesů", "Záznam": "Záznam výkonu"}[name])
     if name == "Přehled":
         graph_canvas.draw_idle()
     elif name == "Procesy":
@@ -298,6 +301,7 @@ def update():
     cpu = psutil.cpu_percent(interval=None)
     ram = psutil.virtual_memory()
     gpu = gpu_usage
+    pages["Záznam"].capture(cpu, ram, gpu, advanced_sample)
     if hardware_name is not None:
         hardware_label.configure(text=hardware_name)
     for gauge, value, caption in zip(
@@ -315,13 +319,14 @@ def update():
         graph_canvas.draw_idle()
     elif active_page == "Procesy":
         pages["Procesy"].set_rows(process_rows)
-    else:
+    elif active_page in ("Procesor", "Disky", "Síť"):
         update_details(advanced_sample)
     root.after(1000, update)
 
 
 def close():
     stop.set()
+    pages["Záznam"].finish()
     root.destroy()
 
 
