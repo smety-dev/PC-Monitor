@@ -10,7 +10,8 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 - Translated navigation, monitoring, charts, recording, analysis, gaming overlay settings, benchmark and application dialogs.
 - Language-neutral persisted page and corner values; existing Czech hardware and benchmark CSV formats remain unchanged.
 - Regression tests for language resolution, persistence and both UI languages. Native Windows dialogs and external diagnostic text can retain their original language.
-- Updated project website, README and build documentation.
+- Updated project website, README and build documentation, including an English demo dashboard.
+- Organized runtime modules in `pc_monitor/`, tests in `tests/` and build tools in `scripts/`; retained `python main.py` and test discovery.
 
 ## [0.9.5]
 

@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/smety-dev/PC-Monitor/releases/tag/v0.9.5"><strong>Download for Windows</strong></a> ·
+  <a href="https://github.com/smety-dev/PC-Monitor/releases"><strong>Download for Windows</strong></a> ·
   <a href="https://smety-dev.github.io/PC-Monitor/">Website</a> ·
   <a href="GUIDE.md">User &amp; developer guide</a> ·
   <a href="ROADMAP.md">Roadmap</a> ·
@@ -24,11 +24,11 @@
 
 **Current version: v0.9.6 — International Update (release candidate)**
 
-PC Monitor brings hardware telemetry, process inspection, recording and gaming benchmarks into one dark desktop workspace. The portable release runs without installing Python. The v0.9.6 candidate offers Czech and English, with automatic system-language selection and a saved choice in Settings. Restart the application to apply a language change. The existing v0.9.5 download is primarily Czech.
+PC Monitor brings hardware telemetry, process inspection, recording and gaming benchmarks into one dark desktop workspace. The portable release runs without installing Python. The v0.9.6 candidate offers Czech and English, with automatic system-language selection and a saved choice in Settings. Restart the application to apply a language change. The older v0.9.5 build is primarily Czech.
 
 <p align="center"><img src="docs/assets/dashboard-demo.svg" alt="PC Monitor dashboard illustration with simulated activity" width="100%"></p>
 
-<p align="center"><em>Illustrative dashboard based on the v0.9.5 Czech interface. Values are simulated, not measured results.</em></p>
+<p align="center"><em>English interface preview for v0.9.6. Illustrative dashboard with simulated values, not measured results.</em></p>
 
 ## What you can do
 
@@ -45,10 +45,10 @@ PC Monitor brings hardware telemetry, process inspection, recording and gaming b
 
 ## Download & run
 
-The published beta remains v0.9.5 until the v0.9.6 candidate is validated and released.
+The source version is v0.9.6. Open Releases for the latest published build; v0.9.5 is the previous Czech-interface beta.
 
-1. Open the [v0.9.5 release](https://github.com/smety-dev/PC-Monitor/releases/tag/v0.9.5).
-2. Download `PC-Monitor-v0.9.5-Windows-x64.zip` from **Assets**.
+1. Open [Releases](https://github.com/smety-dev/PC-Monitor/releases).
+2. Choose the desired published version and download its `PC-Monitor-v*-Windows-x64.zip` from **Assets**.
 3. Extract the **entire** ZIP into a writable folder.
 4. Run `PC-Monitor.exe`. Keep the `_internal` and `tools` folders alongside it.
 
@@ -63,17 +63,33 @@ No Python installation is required for the portable build. The executable is uns
 - GPU readings represent detected 3D engine utilization, not total GPU load or VRAM.
 - Temperature monitoring is not included. No telemetry is uploaded by the application.
 - Language selection affects application UI, not CSV schemas; native OS dialogs and external diagnostics may retain their original language.
-- See [release notes](https://github.com/smety-dev/PC-Monitor/releases/tag/v0.9.5) and [third-party notices](THIRD_PARTY_NOTICES.md) for limitations. Redistribution license review remains open.
+- See [release notes](https://github.com/smety-dev/PC-Monitor/releases) and [third-party notices](THIRD_PARTY_NOTICES.md) for limitations. Redistribution license review remains open.
 
 ## Develop from source
 
 ```powershell
 python -m pip install -r requirements.txt
-python presentmon_bundle.py
+python -m pc_monitor.gaming.presentmon_bundle
 python main.py
 ```
 
 The PresentMon setup is optional for hardware monitoring. For regression tests, run `python -m unittest discover -v`. See the [detailed guide](https://github.com/smety-dev/PC-Monitor/blob/main/GUIDE.md) for architecture, permissions, CSV formats, benchmark definitions and Windows build instructions.
+
+## Repository structure
+
+| Path | Purpose |
+| --- | --- |
+| `main.py` | Application entry point |
+| `pc_monitor/ui/` | Qt interface, charts, dialogs and overlay |
+| `pc_monitor/core/` | Hardware/process metrics, recordings, preferences |
+| `pc_monitor/gaming/` | FPS capture and benchmark calculations |
+| `pc_monitor/locales/` | Language selection and translations |
+| `tests/` | Automated regression tests |
+| `scripts/` | Windows executable packaging |
+| `docs/` | Website and visual assets |
+| `.github/` | CI and community templates |
+
+Run the app and tests from the repository root using the commands above.
 
 ## Project links
 

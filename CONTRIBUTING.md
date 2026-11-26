@@ -10,11 +10,11 @@ Logs are stored locally under `%LOCALAPPDATA%/PC Monitor/logs/`. Review and reda
 
 ## Development
 
-Use a separate branch and keep changes focused. See [GUIDE.md](GUIDE.md) for setup and build instructions.
+Use a separate branch and keep changes focused. Runtime code belongs in `pc_monitor/`, tests in `tests/`, packaging in `scripts/`, and the website in `docs/`. Run commands from the repository root. See [GUIDE.md](GUIDE.md) for setup and build instructions.
 
 ```powershell
 python -m pip install -r requirements.txt
-python presentmon_bundle.py
+python -m pc_monitor.gaming.presentmon_bundle
 python -m unittest discover -v
 python main.py
 ```

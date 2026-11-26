@@ -30,7 +30,7 @@ jobs:
         run: .venv/Scripts/python.exe -m unittest discover -v
       - name: Build and smoke-test portable package
         shell: pwsh
-        run: .venv/Scripts/python.exe build_windows.py
+        run: .venv/Scripts/python.exe -m scripts.build_windows
       - name: Upload release candidate
         uses: actions/upload-artifact@v4
         with:
