@@ -1,18 +1,18 @@
 """FPS capture panel shared with the gaming workspace."""
-from pathlib import Path
 import psutil
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from qt_theme import card, label, button, BLUE, GREEN, ORANGE
 from qt_pages import Plot
 from process_picker import ProcessPicker
-from presentmon_capture import Capture, DEFAULT_EXE
+from presentmon_capture import Capture
+from presentmon_bundle import bundled_exe
 
 
 class FpsPanel(QWidget):
     def __init__(self):
         super().__init__()
         self.capture = Capture(self)
-        self.path = DEFAULT_EXE if DEFAULT_EXE.is_file() else None
+        self.path = bundled_exe()
         self.target = None
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -20,12 +20,12 @@ class FpsPanel(QWidget):
         panel, body = card()
         body.addWidget(label("Měření snímků / PresentMon", "section"))
         row = QHBoxLayout()
-        self.binary = label(self.path.name if self.path else "PresentMon není nastaven", "muted")
+        self.binary = label("PresentMon 2.3.1 • ověřený modul" if self.path else "PresentMon chybí nebo není ověřen", "muted")
         self.binary.setWordWrap(True)
         row.addWidget(self.binary, 1)
-        self.choose = button("Vybrat EXE")
-        self.choose.clicked.connect(self.choose_file)
-        row.addWidget(self.choose)
+        self.check = button("Zkontrolovat modul")
+        self.check.clicked.connect(self.check_module)
+        row.addWidget(self.check)
         body.addLayout(row)
         row = QHBoxLayout()
         self.target_label = label("Herní proces nebyl vybrán", "muted")
@@ -44,7 +44,7 @@ class FpsPanel(QWidget):
         row.addWidget(self.stop_button)
         row.addStretch()
         body.addLayout(row)
-        self.status = label("Vyber oficiální konzolový PresentMon 2.3.1 a běžící hru.", "muted")
+        self.status = label("Vyber běžící hru." if self.path else "Vývojová kopie: spusť python presentmon_bundle.py a zkontroluj modul.", "muted")
         self.status.setWordWrap(True)
         body.addWidget(self.status)
         self.capture.changed.connect(self.status.setText)
@@ -71,12 +71,12 @@ class FpsPanel(QWidget):
         self.had_graph = False
         self.update_controls()
 
-    def choose_file(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Vyber oficiální PresentMon", "", "EXE (*.exe)")
-        if path:
-            self.path = Path(path)
-            self.binary.setText(self.path.name)
-            self.update_controls()
+    def check_module(self):
+        self.path = bundled_exe()
+        self.binary.setText("PresentMon 2.3.1 • ověřený modul" if self.path else "PresentMon chybí nebo není ověřen")
+        self.status.setText("Modul připraven. Vyber hru." if self.path else
+                            "Spusť python presentmon_bundle.py v terminálu projektu.")
+        self.update_controls()
 
     def pick_process(self):
         if self.capture.active:
@@ -92,7 +92,7 @@ class FpsPanel(QWidget):
     def start(self):
         target = self.target
         if not target or not self.path:
-            self.status.setText("Nejdříve vyber PresentMon a herní proces.")
+            self.status.setText("Nejdříve připrav modul a vyber herní proces.")
             return
         pid, created = target
         try:
@@ -101,14 +101,14 @@ class FpsPanel(QWidget):
         except (psutil.Error, OSError, ValueError):
             self.status.setText("Proces již neběží. Vyber jej znovu.")
             return
-        self.capture.start(self.path, pid)
+        self.capture.start(pid)
         self.update_controls()
 
     def update_controls(self):
         active = self.capture.active
         self.start_button.setEnabled(not active and self.path is not None and self.target is not None)
         self.stop_button.setEnabled(active)
-        for widget in (self.choose, self.pick):
+        for widget in (self.check, self.pick):
             widget.setEnabled(not active)
 
     def refresh(self):
