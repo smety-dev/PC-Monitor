@@ -48,6 +48,8 @@ class ProcessSampler:
             try:
                 info = proc.info
                 pid = info["pid"]
+                if pid == 0:  # Windows System Idle Process is not CPU consumption.
+                    continue
                 name = info["name"] or "(nedostupný název)"
                 created = info["create_time"]
                 times = info["cpu_times"]
