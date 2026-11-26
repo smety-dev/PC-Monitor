@@ -98,3 +98,23 @@ class UISmokeTests(unittest.TestCase):
             for mode in (QIcon.Mode.Normal, QIcon.Mode.Active, QIcon.Mode.Selected, QIcon.Mode.Disabled):
                 for state in (QIcon.State.Off, QIcon.State.On):
                     self.assertEqual(reference, icon.pixmap(QSize(20, 20), mode, state).toImage())
+
+    def test_history_filter_and_time_axis(self):
+        window = self.window
+        window.navigate(0)
+        window.history.clear()
+        window.history.extend(((100.0, 10.0, 40.0, 8.0),
+                               (101.0, 12.0, 41.0, 9.0),
+                               (106.0, 14.0, 42.0, None)))
+        window.history_filter.setCurrentIndex(0)
+        window.render_page()
+        self.assertEqual(tuple(window.plot.ax.get_xlim()), (-60.0, 0.0))
+        self.assertEqual(list(window.plot.ax.get_yticks()), [0, 25, 50, 75, 100])
+        self.assertEqual(len(window.plot.ax.lines), 3)
+        self.assertEqual(list(window.plot.ax.lines[0].get_xdata()), [-6.0, -5.0, -2.5, 0.0])
+        import math
+        self.assertTrue(math.isnan(window.plot.ax.lines[0].get_ydata()[2]))
+        window.history_filter.setCurrentIndex(2)
+        self.assertEqual(len(window.plot.ax.lines), 1)
+        self.assertEqual(window.plot.ax.lines[0].get_label(), "RAM")
+        self.assertEqual(window.plot.ax.lines[0].get_ydata()[-1], 42.0)
