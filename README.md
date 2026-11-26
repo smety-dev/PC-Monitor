@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.6.2 — Early development**
+**Current version: v0.7.0 — Early development**
 
 ## Features
 
@@ -12,7 +12,8 @@ A lightweight Windows application for real-time hardware performance monitoring,
 - Live performance charts with up to 60 samples
 - Available and total RAM
 - Physical and logical CPU core detection
-- Dark user interface
+- Dark user interface with utilization and temperature tabs
+- Optional CPU/GPU temperature readings, history and session peaks via LibreHardwareMonitor
 
 ## Requirements
 
@@ -30,13 +31,18 @@ python gui.py
 
 The legacy terminal monitor is also available with `python main.py`. It does not include the GUI-only features.
 
+## Temperature monitoring
+
+Download [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases) from its official releases, extract it and run it alongside PC Monitor. Some sensors require LibreHardwareMonitor to run as administrator; do not bypass system security policies. No extra Python package is required.
+
+The temperature tab reads available CPU package/control (or core fallback) and GPU core/edge sensors through WMI. On multi-device systems it reports the hottest matching reading for each category, not individual devices. Missing sensors display as unavailable. Colors at 80 and 90 °C are generic visual indicators, not hardware-specific safety limits. History contains up to 60 GUI samples, repeating the latest background reading between polls. Peaks are reset on restart.
+
 ## Versioning
 
 The application version is defined in [`version.py`](version.py) and shared by both entry points. When releasing an update, update that file, the current version in this README, and [`CHANGELOG.md`](CHANGELOG.md). README and changelog updates are manual.
 
 ## Planned features
 
-- CPU and GPU temperatures
 - Gaming overlay
 - Improved user interface
 - Standalone executable
