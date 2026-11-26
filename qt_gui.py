@@ -11,6 +11,7 @@ from qt_theme import STYLE, BLUE, GREEN, ORANGE, MetricCard, card, label, button
 from qt_monitor import Monitor
 from diagnostics import configure_logging, LOG
 from qt_gaming import GamingPage
+from qt_benchmark import BenchmarkPage
 from qt_settings import SettingsPage
 from preferences import Preferences
 from qt_pages import Processes, Recording, Analysis, Plot, fmt
@@ -77,6 +78,7 @@ class Window(QMainWindow):
         self.recording = Recording()
         self.analysis = Analysis()
         self.gaming = GamingPage(self.monitor, self, self.prefs)
+        self.benchmark = BenchmarkPage(self.gaming.fps.capture, lambda: self.navigate(7))
         self.settings_page = SettingsPage(self.prefs, self.reset_preferences,
                                           lambda: self.navigate(7), lambda: self.navigate(5))
         self.recording.interval.setCurrentText(str(self.prefs.get("recording/interval")))
@@ -90,6 +92,7 @@ class Window(QMainWindow):
             ("Záznam","Záznam výkonu",self.recording,QStyle.StandardPixmap.SP_DialogSaveButton),
             ("Analýza","Analýza výkonu",scroll(self.analysis),QStyle.StandardPixmap.SP_FileDialogContentsView),
             ("Gaming","Gaming Mode & Overlay",scroll(self.gaming),QStyle.StandardPixmap.SP_MediaPlay),
+            ("Benchmark","Gaming Performance Analyzer",scroll(self.benchmark),QStyle.StandardPixmap.SP_FileDialogContentsView),
             ("Nastavení","Nastavení aplikace",scroll(self.settings_page),QStyle.StandardPixmap.SP_FileDialogDetailedView),
         ]
         self.group = QButtonGroup(self)
@@ -232,8 +235,10 @@ class Window(QMainWindow):
             self.recording.capture(cpu,ram,gpu,self.monitor.advanced)
             self.history.append((cpu,ram.percent,gpu))
         recording = self.recording.recorder.active
-        self.gaming.refresh(basic, self.monitor.gpu, self.monitor.advanced, recording, not self.isMinimized())
-        self.live.setText("●  Záznam probíhá" if recording else
+        self.benchmark.refresh(self.stack.currentIndex() == 8 and not self.isMinimized())
+        benchmarking = self.gaming.fps.capture.benchmark.active
+        self.gaming.refresh(basic, self.monitor.gpu, self.monitor.advanced, recording or benchmarking, not self.isMinimized())
+        self.live.setText("●  Benchmark" if benchmarking else "●  Záznam probíhá" if recording else
                           "●  Gaming Mode" if self.gaming.enabled else "●  Živé měření")
         if not self.isMinimized():
             self.render_page()
@@ -310,6 +315,7 @@ class Window(QMainWindow):
             self.prefs.remove_geometry()
         self.prefs.sync()
         self.timer.stop()
+        self.benchmark.shutdown()
         self.gaming.shutdown()
         self.monitor.close()
         self.recording.finish()
