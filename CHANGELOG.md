@@ -2,6 +2,18 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.8.0]
+
+### Added
+- CPU frequency and utilization per logical processor.
+- Local disk capacity and aggregate disk read/write rates.
+- Aggregate network receive/send rates.
+- Hardware and network tab with background sampling.
+
+### Notes
+- Based on v0.6.2; v0.7.0 temperature work remains experimental in a separate branch and is not included.
+- Windows runtime validation is pending.
+
 ## [0.6.2]
 
 ### Added
