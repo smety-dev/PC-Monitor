@@ -13,6 +13,9 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 - Consistent relative percentage changes, symmetric plot margins and centered legends.
 - Mouse-wheel scrolling over read-only charts in scrollable pages.
 
+### Changed
+- Replaced Windows stock navigation icons with consistent original high-DPI outline icons in theme colors.
+
 ### Notes
 - Hardware CSV schema, dependencies and MIT license unchanged. No additional capture session.
 - Stutter classification is heuristic; no CPU/GPU bottleneck inference or displayed-FPS claim.
