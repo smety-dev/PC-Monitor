@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 import psutil
 from version import __version__
+from hardware_metrics import Sampler
 import subprocess
 import threading
 import time
@@ -14,6 +15,7 @@ BG = "#10151f"
 PANEL = "#1c2432"
 
 gpu_usage = None
+advanced_sample = None
 cpu_history = deque(maxlen=60)
 ram_history = deque(maxlen=60)
 gpu_history = deque(maxlen=60)
@@ -21,7 +23,8 @@ gpu_history = deque(maxlen=60)
 
 root = tk.Tk()
 root.title(f"PC Monitor v{__version__}")
-root.geometry("650x850")
+root.geometry("760x850")
+root.minsize(600, 650)
 root.configure(bg=BG)
 
 style = ttk.Style()
@@ -50,7 +53,7 @@ def get_hardware():
 
 def create_meter(name, color):
     frame = tk.Frame(root, bg=PANEL)
-    frame.pack(fill="x", padx=20, pady=8)
+    frame.pack(fill="x", padx=20, pady=3)
 
     label = tk.Label(
         frame,
@@ -59,7 +62,7 @@ def create_meter(name, color):
         bg=PANEL,
         fg=color
     )
-    label.pack(pady=8)
+    label.pack(pady=3)
 
     style_name = f"{name}.Horizontal.TProgressbar"
 
@@ -75,7 +78,7 @@ def create_meter(name, color):
         style=style_name,
         maximum=100
     )
-    bar.pack(fill="x", padx=15, pady=10)
+    bar.pack(fill="x", padx=15, pady=4)
 
     return label, bar
 
@@ -87,7 +90,7 @@ title = tk.Label(
     bg=BG,
     fg="white"
 )
-title.pack(pady=20)
+title.pack(pady=8)
 hardware_label = tk.Label(
     root,
     text=get_hardware(),
@@ -110,7 +113,72 @@ info = tk.Label(
     fg="white",
     justify="left"
 )
-info.pack(pady=15)
+info.pack(pady=5)
+notebook = ttk.Notebook(root)
+notebook.pack(fill="both", expand=True, padx=15, pady=8)
+usage_tab = tk.Frame(notebook, bg=BG)
+details_tab = tk.Frame(notebook, bg=BG)
+notebook.add(usage_tab, text="Vytížení")
+notebook.add(details_tab, text="Hardware a síť")
+
+details = tk.Text(details_tab, bg=PANEL, fg="white", font=("Consolas", 11),
+                  wrap="word", relief="flat", padx=12, pady=10)
+scrollbar = ttk.Scrollbar(details_tab, command=details.yview)
+details.configure(yscrollcommand=scrollbar.set, state="disabled")
+scrollbar.pack(side="right", fill="y")
+details.pack(side="left", fill="both", expand=True)
+
+
+def advanced_worker():
+    global advanced_sample
+    sampler = Sampler()
+    while True:
+        try:
+            advanced_sample = sampler.sample()
+        except (OSError, psutil.Error, NotImplementedError):
+            advanced_sample = None
+        time.sleep(2)
+
+
+def render_details():
+    sample = advanced_sample
+    if sample is None:
+        text = "Čekám na údaje nebo jsou nedostupné."
+    else:
+        frequency = sample["frequency"]
+        freq_text = f"{frequency:.0f} MHz" if frequency else "Nedostupné"
+        lines = [f"CPU frekvence (hlášená OS): {freq_text}",
+                 "", "LOGICKÉ PROCESORY"]
+        for i, value in enumerate(sample["cores"]):
+            bar = "█" * min(20, max(0, int(value / 5)))
+            lines.append(f"{i:3}: {value:5.1f} %  {bar}")
+        if not sample["cores"]:
+            lines.append("Nedostupné")
+        lines += ["", "DISKY"]
+        for mount, used, total, percent in sample["drives"]:
+            lines.append(f"{mount}  {used / 1024**3:.1f}/{total / 1024**3:.1f} GiB ({percent:.1f} %)")
+        if not sample["drives"]:
+            lines.append("Nedostupné")
+        lines += ["", "PŘENOS DAT (celkem)"]
+        for label, pair, names in (
+            ("Disk", sample["disk_rates"], ("Čtení", "Zápis")),
+            ("Síť", sample["net_rates"], ("Příjem", "Odesílání")),
+        ):
+            lines.append(label)
+            if pair is None:
+                lines.append("  Nedostupné / čekám na další vzorek")
+            else:
+                for name, value in zip(names, pair):
+                    lines.append(f"  {name}: {value / 1024**2:.2f} MiB/s")
+        text = "\n".join(lines)
+    if details.get("1.0", "end-1c") != text:
+        position = details.yview()[0]
+        details.configure(state="normal")
+        details.delete("1.0", "end")
+        details.insert("1.0", text)
+        details.configure(state="disabled")
+        details.yview_moveto(position)
+
 fig = Figure(figsize=(5, 2), dpi=100)
 fig.patch.set_facecolor(BG)
 
@@ -128,8 +196,8 @@ gpu_line, = ax.plot([], [], color="#4ade80", label="GPU")
 
 ax.legend(facecolor=PANEL, labelcolor="white")
 
-canvas = FigureCanvasTkAgg(fig, master=root)
-canvas.get_tk_widget().pack(pady=10)
+canvas = FigureCanvasTkAgg(fig, master=usage_tab)
+canvas.get_tk_widget().pack(fill="both", expand=True)
 
 
 def gpu_worker():
@@ -196,7 +264,10 @@ def update():
     ram_line.set_data(range(len(ram_history)), list(ram_history))
     gpu_line.set_data(range(len(gpu_history)), list(gpu_history))
 
-    canvas.draw_idle()
+    if notebook.select() == str(usage_tab):
+        canvas.draw_idle()
+    else:
+        render_details()
 
     root.after(1000, update)
     
@@ -206,6 +277,8 @@ threading.Thread(
     target=gpu_worker,
     daemon=True
 ).start()
+
+threading.Thread(target=advanced_worker, daemon=True).start()
 
 psutil.cpu_percent()
 update()
