@@ -11,9 +11,12 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 
 ### Changed
 - Searchable capture-target dialog with window-title filter, PID search and optional background processes.
+- Automatic discovery and SHA-256 verification of the bundled PresentMon; removed the manual executable picker.
+- Source distribution builder includes PresentMon and upstream licensing notices.
+- Localized ETW permission errors and four additional unit tests.
 
 ### Notes
-- PresentMon executable must be obtained separately. No new pip dependencies. Windows ETW permissions and runtime compatibility require validation.
+- PresentMon is acquired at build/setup time from the fixed official release and included in the source ZIP. No new pip dependencies. ETW access-denied was confirmed on a restricted Windows PC; successful capture still requires validation on an authorized PC.
 - Hardware CSV format is unchanged; frame metrics are live only. Present rate is not displayed FPS.
 
 ## [0.9.0]
