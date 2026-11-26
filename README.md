@@ -6,6 +6,8 @@ A lightweight Windows application for real-time hardware performance monitoring,
 
 ## Features
 
+- New Qt desktop interface with custom antialiased gauges, rounded cards, dark navigation and native tables
+
 - Real-time CPU and RAM utilization
 - GPU 3D utilization (Windows performance counters, busiest detected 3D engine)
 - Automatic CPU and GPU name detection in the GUI
@@ -23,22 +25,22 @@ A lightweight Windows application for real-time hardware performance monitoring,
 ## Requirements
 
 - Windows 10 or 11 (compatibility across systems has not been fully tested)
-- Python 3.14 (development version used), with Tkinter
+- Python 3.14 (development version used), with PySide6 (Qt)
 - PowerShell and Windows GPU performance counters
-- psutil and matplotlib
+- psutil, matplotlib and PySide6
 
 ## Installation
 
 ```powershell
 python -m pip install -r requirements.txt
-python gui.py
+python qt_gui.py
 ```
 
 The legacy terminal monitor is also available with `python main.py`. It does not include the GUI-only features.
 
 ## Dashboard
 
-The sidebar switches between the overview, CPU, disks, network, process and recording pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The dashboard uses existing Tkinter and matplotlib dependencies, with no extra installation required.
+The sidebar switches between the overview, CPU, disks, network, process and recording pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The new desktop interface uses PySide6 and matplotlib. The original Tkinter interface remains available via python gui.py. Install updated requirements before launching Qt.
 
 ## Advanced monitoring
 
