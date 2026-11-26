@@ -1,4 +1,5 @@
 """Standalone, non-injecting desktop overlay and gaming settings."""
+from i18n import tr
 from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import QColor, QFont, QPainter, QGuiApplication
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QSlider, QCheckBox
@@ -92,7 +93,7 @@ class Overlay(QWidget):
             p.setPen(QColor(MUTED))
             p.setFont(make_font(11))
             p.drawText(QRectF(15, 136, 280, 19), Qt.AlignmentFlag.AlignVCenter,
-                       frequency(self.freq) + "   ·   " + available_memory(self.memory))
+                       frequency(self.freq) + "   ·   " + tr(available_memory(self.memory)))
 
 
 class GamingPage(QWidget):
@@ -108,51 +109,52 @@ class GamingPage(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         self.tabs = workspace_tabs(layout)
-        fps_layout = workspace_tab(self.tabs, "Měření FPS")
+        fps_layout = workspace_tab(self.tabs, tr("Měření FPS"))
         self.fps = FpsPanel()
         fps_layout.addWidget(self.fps)
         fps_layout.addStretch()
-        layout = workspace_tab(self.tabs, "Herní overlay")
+        layout = workspace_tab(self.tabs, tr("Herní overlay"))
 
         panel, body = card()
         header = QHBoxLayout()
-        header.addWidget(label("Zobrazení výkonu ve hře", "section"))
+        header.addWidget(label(tr("Zobrazení výkonu ve hře"), "section"))
         header.addStretch()
-        self.status = label("VYPNUTO", "muted")
+        self.status = label(tr("VYPNUTO"), "muted")
         header.addWidget(self.status)
         body.addLayout(header)
-        description = label("Při hraní zobrazí živé údaje v samostatném overlayi. Kliknutí procházejí do hry.", "muted")
+        description = label(tr("Při hraní zobrazí živé údaje v samostatném overlayi. Kliknutí procházejí do hry."), "muted")
         description.setWordWrap(True)
         body.addWidget(description)
         controls = QHBoxLayout()
-        self.toggle = button("Zapnout overlay", True)
+        self.toggle = button(tr("Zapnout overlay"), True)
         self.toggle.clicked.connect(self.toggle_mode)
         controls.addWidget(self.toggle)
-        self.minimize = button("Minimalizovat aplikaci")
+        self.minimize = button(tr("Minimalizovat aplikaci"))
         self.minimize.clicked.connect(parent_window.showMinimized)
         controls.addWidget(self.minimize)
         controls.addStretch()
         body.addLayout(controls)
-        self.low_overhead = QCheckBox("Pozastavit sběr seznamu procesů během Gaming Mode")
+        self.low_overhead = QCheckBox(tr("Pozastavit sběr seznamu procesů během Gaming Mode"))
         self.low_overhead.setChecked(True)
         self.low_overhead.toggled.connect(self.apply_mode)
         body.addWidget(self.low_overhead)
         layout.addWidget(panel)
 
         panel, body = card()
-        body.addWidget(label("Nastavení overlaye", "section"))
+        body.addWidget(label(tr("Nastavení overlaye"), "section"))
         row = QHBoxLayout()
         row.addWidget(label("Monitor", "muted"))
         self.screen = QComboBox()
         row.addWidget(self.screen, 1)
-        row.addWidget(label("Umístění", "muted"))
+        row.addWidget(label(tr("Umístění"), "muted"))
         self.corner = QComboBox()
-        self.corner.addItems(CORNERS)
+        for corner in CORNERS:
+            self.corner.addItem(tr(corner), corner)
         self.corner.setCurrentIndex(1)
         row.addWidget(self.corner, 1)
         body.addLayout(row)
         row = QHBoxLayout()
-        row.addWidget(label("Neprůhlednost pozadí", "muted"))
+        row.addWidget(label(tr("Neprůhlednost pozadí"), "muted"))
         self.opacity = QSlider(Qt.Orientation.Horizontal)
         self.opacity.setRange(35, 100)
         self.opacity.setValue(90)
@@ -160,18 +162,18 @@ class GamingPage(QWidget):
         self.opacity_text = label("90 %")
         row.addWidget(self.opacity_text)
         body.addLayout(row)
-        self.details = QCheckBox("Zobrazit frekvenci CPU a dostupnou RAM")
+        self.details = QCheckBox(tr("Zobrazit frekvenci CPU a dostupnou RAM"))
         self.details.setChecked(True)
         body.addWidget(self.details)
-        self.fps_visible = QCheckBox("Zobrazit FPS, 1% Low a frametime")
+        self.fps_visible = QCheckBox(tr("Zobrazit FPS, 1% Low a frametime"))
         self.fps_visible.setChecked(True)
         body.addWidget(self.fps_visible)
         layout.addWidget(panel)
 
         panel, body = card()
-        body.addWidget(label("Živý náhled", "section"))
+        body.addWidget(label(tr("Živý náhled"), "section"))
         body.addWidget(self.preview, 0, Qt.AlignmentFlag.AlignLeft)
-        hint = label("Pro hry použij režim bez okrajů nebo v okně. V exkluzivním fullscreenu nemusí být overlay viditelný. FPS vyžaduje samostatné měření PresentMon. Teploty zatím neměříme.", "muted")
+        hint = label(tr("Pro hry použij režim bez okrajů nebo v okně. V exkluzivním fullscreenu nemusí být overlay viditelný. FPS vyžaduje samostatné měření PresentMon. Teploty zatím neměříme."), "muted")
         hint.setWordWrap(True)
         body.addWidget(hint)
         layout.addWidget(panel)
@@ -191,7 +193,7 @@ class GamingPage(QWidget):
 
     def load_preferences(self):
         self.loading_preferences = True
-        self.corner.setCurrentText(self.prefs.get("overlay/corner"))
+        self.corner.setCurrentIndex(self.corner.findData(self.prefs.get("overlay/corner")))
         self.opacity.setValue(self.prefs.get("overlay/opacity"))
         self.details.setChecked(self.prefs.get("overlay/details"))
         self.fps_visible.setChecked(self.prefs.get("overlay/fps"))
@@ -230,7 +232,7 @@ class GamingPage(QWidget):
         if screen:
             g = screen.geometry()
             x, y = overlay_position((g.x(), g.y(), g.width(), g.height()),
-                                    (self.overlay.width(), self.overlay.height()), self.corner.currentText())
+                                    (self.overlay.width(), self.overlay.height()), self.corner.currentData())
             if self.overlay.x() != x or self.overlay.y() != y:
                 self.overlay.move(x, y)
 
@@ -241,7 +243,7 @@ class GamingPage(QWidget):
             overlay.configure(value, self.details.isChecked(), self.fps_visible.isChecked())
         self.position_overlay()
         if not self.loading_preferences:
-            self.prefs.set("overlay/corner", self.corner.currentText())
+            self.prefs.set("overlay/corner", self.corner.currentData())
             self.prefs.set("overlay/opacity", value)
             self.prefs.set("overlay/details", self.details.isChecked())
             self.prefs.set("overlay/fps", self.fps_visible.isChecked())
@@ -256,8 +258,8 @@ class GamingPage(QWidget):
             self.prefs.set("gaming/low_overhead", self.low_overhead.isChecked())
             self.prefs.sync()
         self.monitor.set_gaming(self.enabled and self.low_overhead.isChecked())
-        self.toggle.setText("Vypnout overlay" if self.enabled else "Zapnout overlay")
-        self.status.setText("AKTIVNÍ" if self.enabled else "VYPNUTO")
+        self.toggle.setText(tr("Vypnout overlay") if self.enabled else tr("Zapnout overlay"))
+        self.status.setText(tr("AKTIVNÍ") if self.enabled else tr("VYPNUTO"))
         self.status.setStyleSheet("color: " + (GREEN if self.enabled else MUTED))
         if self.enabled:
             self.position_overlay()
