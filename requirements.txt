@@ -1,2 +1,4 @@
+# Runtime dependencies (Qt desktop, monitoring, charts)
 psutil==7.2.2
 matplotlib
+PySide6>=6.10,<7

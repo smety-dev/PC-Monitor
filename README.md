@@ -2,42 +2,43 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.8.3 — Early development**
+**Current version: v0.8.4 — Early development**
 
 ## Features
 
+- New Qt desktop interface with custom antialiased gauges, rounded cards, dark navigation and native tables
 - Real-time CPU and RAM utilization
 - GPU 3D utilization (Windows performance counters, busiest detected 3D engine)
 - Automatic CPU and GPU name detection in the GUI
 - Live performance charts with up to 60 samples
 - Available and total RAM
 - Physical and logical CPU core detection
-- Modern dark dashboard with circular gauges and dedicated Overview, CPU, Disks and Network pages
 - OS-reported CPU frequency and per-logical-processor utilization
 - Local disk capacity and aggregate disk read/write throughput
 - Aggregate network receive/send throughput
 - Read-only process manager with CPU and RAM usage, PID search and sortable columns
 - Local performance CSV recording with selectable sampling interval
+- Offline performance analysis with charts and sample statistics
 
 ## Requirements
 
 - Windows 10 or 11 (compatibility across systems has not been fully tested)
-- Python 3.14 (development version used), with Tkinter
+- Python 3.14 (development version used), with PySide6 (Qt)
 - PowerShell and Windows GPU performance counters
-- psutil and matplotlib
+- psutil, matplotlib and PySide6
 
 ## Installation
 
 ```powershell
 python -m pip install -r requirements.txt
-python gui.py
+python main.py
 ```
 
-The legacy terminal monitor is also available with `python main.py`. It does not include the GUI-only features.
+`main.py` is the canonical entry point. It launches the Qt desktop application.
 
 ## Dashboard
 
-The sidebar switches between the overview, CPU, disks, network, process and recording pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The dashboard uses existing Tkinter and matplotlib dependencies, with no extra installation required.
+The sidebar switches between the overview, CPU, disks, network, process, recording and analysis pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The new desktop interface uses PySide6 and matplotlib. The obsolete Tkinter and terminal implementations were removed from this development version.
 
 ## Advanced monitoring
 
@@ -51,9 +52,21 @@ Search by process name or PID and click column headings to sort. CPU is normaliz
 
 Open Záznam (Recording), select 1, 2, 5 or 10 seconds and choose a new CSV file. Existing files are never overwritten. Recording continues while navigating other pages and stops on application exit. CSV uses UTF-8 with BOM, semicolon separators, Czech column names, decimal commas for Czech Excel, local date/time to seconds, elapsed seconds and explicit metric units. For other locales, import CSV with semicolon delimiter and Czech decimal settings. Missing values are blank; GPU and advanced readings are independently polled and may repeat. Actual sampling times depend on GUI scheduling. Data stays local; no upload or administrator elevation is requested. Choose a writable local directory (not a network drive). No per-process data or temperatures are recorded.
 
+## Performance analyzer
+
+Open Analýza and load an original PC Monitor CSV file (Czech or older English headers). The analyzer displays sample counts, last elapsed time, minimum, arithmetic mean and maximum for available values, plus selectable graphs. Invalid elapsed-time rows are skipped; invalid metric cells are unavailable. The graph subsamples very long recordings for responsiveness; statistics use all accepted rows. Files are limited to 500,000 data rows. Utilization hints are heuristic, not a bottleneck diagnosis: FPS, frame times and per-core history are not recorded. No data is uploaded.
+
+## Testing
+
+```powershell
+python -m unittest discover -v
+```
+
+Run the application and exercise all seven pages after installing requirements. The automated tests cover monitoring, CSV logic and version metadata consistency.
+
 ## Versioning
 
-The application version is defined in [`version.py`](version.py) and shared by both entry points. When releasing an update, update that file, the current version in this README, and [`CHANGELOG.md`](CHANGELOG.md). README and changelog updates are manual.
+The application version is defined in [`version.py`](version.py) and displayed by the Qt application. When releasing an update, update that file, the current version in this README, and [`CHANGELOG.md`](CHANGELOG.md). README and changelog updates are manual.
 
 ## Planned features
 

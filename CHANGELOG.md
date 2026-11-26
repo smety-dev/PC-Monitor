@@ -2,6 +2,25 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.8.4]
+
+### Added
+- PySide6 desktop interface with rounded cards, custom gauges, native tables and seven monitoring workspaces.
+- Offline CSV analyzer supporting Czech and original English recordings.
+- Selectable charts, sample statistics and cautious high-utilization hints.
+- Background CSV loading and invalid-value handling.
+
+### Fixed
+- Dark chart placeholder before a recording is loaded.
+
+### Changed
+- `main.py` now launches the Qt application; removed the old Tkinter UI and terminal monitor.
+- Added PySide6 to runtime requirements; retained psutil and matplotlib for monitoring and charts.
+- Added automated version consistency checks.
+
+### Notes
+- Initial Qt interface confirmed by the project owner on Windows; final cleanup requires regression testing.
+
 ## [0.8.3]
 
 ### Fixed
