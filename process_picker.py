@@ -1,4 +1,5 @@
 """Compact dialog for selecting a capture target, not a list of every system task."""
+from i18n import tr
 import os
 import ctypes
 from ctypes import wintypes
@@ -80,7 +81,7 @@ def filter_targets(rows, query="", show_all=False):
 class ProcessPicker(QDialog):
     def __init__(self, parent=None, previous=None):
         super().__init__(parent)
-        self.setWindowTitle("Výběr hry nebo aplikace")
+        self.setWindowTitle(tr("Výběr hry nebo aplikace"))
         self.resize(720, 490)
         self.setMinimumSize(480, 330)
         self.selected = None
@@ -90,20 +91,20 @@ class ProcessPicker(QDialog):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(3 * SPACE, 3 * SPACE, 3 * SPACE, 3 * SPACE)
         layout.setSpacing(SPACE * 2)
-        layout.addWidget(label("Vyber proces pro měření FPS", "section"))
-        layout.addWidget(label("Spusť hru a vyhledej její název, okno nebo PID.", "muted"))
+        layout.addWidget(label(tr("Vyber proces pro měření FPS"), "section"))
+        layout.addWidget(label(tr("Spusť hru a vyhledej její název, okno nebo PID."), "muted"))
         row = QHBoxLayout()
         self.search = QLineEdit()
-        self.search.setPlaceholderText("Hledat hru, aplikaci nebo PID…")
+        self.search.setPlaceholderText(tr("Hledat hru, aplikaci nebo PID…"))
         self.search.setClearButtonEnabled(True)
         row.addWidget(self.search, 1)
-        reload_button = button("Obnovit")
+        reload_button = button(tr("Obnovit"))
         reload_button.clicked.connect(self.reload)
         row.addWidget(reload_button)
         layout.addLayout(row)
-        self.all = QCheckBox("Zobrazit také procesy bez viditelného okna")
+        self.all = QCheckBox(tr("Zobrazit také procesy bez viditelného okna"))
         layout.addWidget(self.all)
-        self.table = table(["Aplikace / proces", "Název okna", "PID"])
+        self.table = table([tr("Aplikace / proces"), tr("Název okna"), "PID"])
         from PySide6.QtWidgets import QHeaderView, QAbstractItemView
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
@@ -113,10 +114,10 @@ class ProcessPicker(QDialog):
         layout.addWidget(self.count)
         row = QHBoxLayout()
         row.addStretch()
-        cancel = button("Zrušit")
+        cancel = button(tr("Zrušit"))
         cancel.clicked.connect(self.reject)
         row.addWidget(cancel)
-        self.confirm = button("Vybrat proces", True)
+        self.confirm = button(tr("Vybrat proces"), True)
         self.confirm.clicked.connect(self.accept_selection)
         self.confirm.setEnabled(False)
         row.addWidget(self.confirm)
@@ -149,8 +150,8 @@ class ProcessPicker(QDialog):
                     self.table.selectRow(i)
         finally:
             self.table.setUpdatesEnabled(True)
-        self.count.setText(f"{len(self.filtered)} z {len(self.rows)} procesů" if self.filtered else
-                           "Nic nenalezeno. Změň hledání nebo zobraz procesy bez okna.")
+        self.count.setText(tr(f"{len(self.filtered)} z {len(self.rows)} procesů") if self.filtered else
+                           tr("Nic nenalezeno. Změň hledání nebo zobraz procesy bez okna."))
         self.selection_changed()
 
     def selection_changed(self):
