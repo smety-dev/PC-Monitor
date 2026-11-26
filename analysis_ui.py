@@ -5,7 +5,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from dashboard_ui import BG, PANEL, TRACK, TEXT, MUTED, BLUE, ORANGE, GREEN, FONT, ScrollPage, card, label
+from dashboard_ui import BG, PANEL, TRACK, TEXT, MUTED, BLUE, ORANGE, GREEN, FONT, ScrollPage, card, label, action, table_style, stripe_table, chart_style
 from performance_analysis import read_recording, summarize, utilization_hints
 
 GROUPS = {
@@ -34,8 +34,7 @@ class AnalysisPage(ScrollPage):
         self.closed = False
         toolbar = tk.Frame(self.body, bg=BG)
         toolbar.pack(fill="x", pady=(0, 8))
-        self.open_button = tk.Button(toolbar, text="Načíst CSV", command=self.open_file,
-                                     bg=BLUE, fg=BG, relief="flat", font=(FONT, 11, "bold"))
+        self.open_button = action(toolbar, "Načíst CSV", self.open_file)
         self.open_button.pack(side="left", ipadx=12, ipady=6)
         self.group = tk.StringVar(value=next(iter(GROUPS)))
         selector = ttk.Combobox(toolbar, textvariable=self.group, values=list(GROUPS),
@@ -45,8 +44,24 @@ class AnalysisPage(ScrollPage):
         self.info = label(self.body, "Vyber uložený záznam PC Monitoru.", 10, MUTED,
                           bg=BG, wraplength=540, justify="left")
         self.info.pack(anchor="w", pady=6)
+        kpis = tk.Frame(self.body, bg=BG)
+        kpis.pack(fill="x", pady=6)
+        self.kpis = {}
+        for i, (key, title, color) in enumerate((
+            ("cpu_percent", "Průměr CPU", BLUE),
+            ("gpu_3d_percent", "Průměr GPU", GREEN),
+            ("ram_percent", "Průměr RAM", ORANGE),
+        )):
+            kpis.columnconfigure(i, weight=1, uniform="kpi")
+            panel = card(kpis)
+            panel.grid(row=0, column=i, sticky="nsew", padx=4)
+            label(panel, title, 10, MUTED).pack(anchor="w", padx=14, pady=(10, 0))
+            val = label(panel, "—", 22, color, True)
+            val.pack(anchor="w", padx=14, pady=(0, 10))
+            self.kpis[key] = val
         graph = card(self.body)
         graph.pack(fill="x", pady=5)
+        label(graph, "Průběh měření", 13, TEXT, True).pack(anchor="w", padx=14, pady=(10, 0))
         self.fig = Figure(figsize=(6, 2.8), dpi=100, facecolor=PANEL)
         self.ax = self.fig.add_subplot(111)
         self.fig.subplots_adjust(left=.13, right=.96, bottom=.21, top=.92)
@@ -55,13 +70,7 @@ class AnalysisPage(ScrollPage):
         table_card = card(self.body)
         table_card.pack(fill="x", pady=5)
         label(table_card, "Statistika dostupných vzorků", 13, TEXT, True).pack(anchor="w", padx=12, pady=8)
-        style = ttk.Style(self)
-        style.configure("Analysis.Treeview", background=PANEL, fieldbackground=PANEL,
-                        foreground=TEXT, rowheight=25, font=(FONT, 10))
-        style.configure("Analysis.Treeview.Heading", background=TRACK, foreground=TEXT)
-        style.map("Analysis.Treeview.Heading", background=[("pressed", "#284568"), ("active", "#40536b")],
-                  foreground=[("pressed", TEXT), ("active", TEXT)])
-        style.map("Analysis.Treeview", background=[("selected", "#284568")], foreground=[("selected", TEXT)])
+        table_style(self, "Analysis.Treeview")
         self.table = ttk.Treeview(table_card, columns=("metric", "min", "avg", "max", "count"),
                                  show="headings", height=9, style="Analysis.Treeview")
         for key, title, width in (("metric", "Metrika", 180), ("min", "Min", 65),
@@ -69,6 +78,7 @@ class AnalysisPage(ScrollPage):
             self.table.heading(key, text=title)
             self.table.column(key, width=width, minwidth=45, anchor="w" if key == "metric" else "e",
                               stretch=key == "metric")
+        stripe_table(self.table)
         self.table.pack(fill="x", padx=8, pady=(0, 8))
         self.hints = label(self.body, "", 10, MUTED, bg=BG, wraplength=540, justify="left")
         self.hints.pack(anchor="w", pady=10)
@@ -99,16 +109,21 @@ class AnalysisPage(ScrollPage):
             messagebox.showerror("Nelze načíst záznam", str(exc), parent=self)
         else:
             self.rows = rows
+            for key, widget in self.kpis.items():
+                stat = stats[key]
+                widget.configure(text=f"{stat[1]:.1f} %" if stat else "N/A")
             self.info.configure(text=f"{Path(path).name} · {len(rows)} vzorků · "
                                      f"poslední vzorek {rows[-1]['elapsed_s']:.1f} s · "
                                      f"vynechané řádky: {skipped}")
             self.table.delete(*self.table.get_children())
+            index = 0
             for group, metrics in GROUPS.items():
                 unit = group[group.index("("):]
                 for key, name, _ in metrics:
                     stat = stats[key]
                     values = tuple(f"{v:.2f}" for v in stat[:3]) + (stat[3],) if stat else ("N/A", "N/A", "N/A", 0)
-                    self.table.insert("", "end", values=(name + " " + unit, *values))
+                    self.table.insert("", "end", values=(name + " " + unit, *values), tags=("odd" if index % 2 else "even",))
+                    index += 1
             self.hints.configure(text="Orientační vyhodnocení:\n" + "\n".join(hints))
             self.draw()
         finally:
@@ -118,12 +133,8 @@ class AnalysisPage(ScrollPage):
     def draw(self):
         ax = self.ax
         ax.clear()
-        ax.set_facecolor(PANEL)
-        ax.tick_params(colors=MUTED, labelsize=9)
+        chart_style(ax)
         ax.set_xlabel("Uplynulý čas (s)", color=MUTED)
-        ax.grid(color=TRACK, alpha=.6)
-        for spine in ax.spines.values():
-            spine.set_color(TRACK)
         group = self.group.get()
         if group == "Vytížení (%)":
             ax.set_ylim(0, 100)
@@ -138,8 +149,8 @@ class AnalysisPage(ScrollPage):
             x = [r["elapsed_s"] for r in sampled]
             for key, name, color in GROUPS[group]:
                 ax.plot(x, [r[key] if r[key] is not None else float("nan") for r in sampled],
-                        color=color, label=name, linewidth=1.2, marker="." if len(x) == 1 else None)
-            ax.legend(facecolor=PANEL, edgecolor=TRACK, labelcolor=TEXT)
+                        color=color, label=name, linewidth=1.8, marker="." if len(x) == 1 else None)
+            ax.legend(frameon=False, labelcolor=TEXT, loc="upper left", ncol=3)
         else:
             ax.text(.5, .5, "Načti CSV soubor", transform=ax.transAxes, ha="center", color=MUTED)
         self.chart.draw_idle()
