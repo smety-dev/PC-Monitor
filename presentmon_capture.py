@@ -2,11 +2,11 @@
 import os
 import time
 import uuid
-from pathlib import Path
 from PySide6.QtCore import QObject, QProcess, Signal
 from frame_metrics import FrameStream
 
-DEFAULT_EXE = Path(__file__).resolve().parent / "tools" / "PresentMon-2.3.1-x64.exe"
+from presentmon_bundle import bundled_exe
+from presentmon_errors import capture_error
 
 
 class Capture(QObject):
@@ -31,15 +31,15 @@ class Capture(QObject):
     def active(self):
         return self.process.state() != QProcess.ProcessState.NotRunning
 
-    def start(self, path, pid):
+    def start(self, pid):
         if self.active:
             return
         if os.name != "nt":
             self.changed.emit("PresentMon je dostupný pouze na Windows.")
             return
-        exe = Path(path)
-        if not exe.is_file() or exe.suffix.lower() != ".exe":
-            self.changed.emit("Vyber oficiální konzolový soubor PresentMon.exe.")
+        exe = bundled_exe()
+        if exe is None:
+            self.changed.emit("PresentMon není připraven. Spusť python presentmon_bundle.py.")
             return
         self.exe = str(exe.resolve())
         self.session = "PCMonitor-" + uuid.uuid4().hex
@@ -74,7 +74,7 @@ class Capture(QObject):
     def finished(self, code, status):
         self.read_error()
         if not self.stopping:
-            self.changed.emit(f"PresentMon skončil ({code}). " + self.stderr.strip()[-500:])
+            self.changed.emit(capture_error(code, self.stderr))
         self.stream = None
 
     def snapshot(self):
