@@ -3,6 +3,7 @@ from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import QColor, QFont, QPainter, QGuiApplication
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QSlider, QCheckBox
 from gaming_metrics import CORNERS, percent, fraction, frequency, available_memory, overlay_position
+from qt_fps import FpsPanel
 from qt_theme import BLUE, GREEN, ORANGE, TEXT, MUTED, GRID, card, label, button
 
 
@@ -23,14 +24,17 @@ class Overlay(QWidget):
         self.recording = False
         self.alpha = 230
         self.detailed = True
+        self.frame_stats = None
+        self.show_fps = True
 
-    def configure(self, alpha, detailed):
+    def configure(self, alpha, detailed, show_fps):
         self.alpha = round(alpha * 255 / 100)
         self.detailed = detailed
-        self.setFixedSize(310, 166 if detailed else 140)
+        self.show_fps = show_fps
+        self.setFixedSize(310, (166 if detailed else 140) + (56 if show_fps else 0))
         self.update()
 
-    def set_metrics(self, basic, gpu, advanced, recording):
+    def set_metrics(self, basic, gpu, advanced, recording, frame_stats):
         if basic is None:
             cpu, ram_percent, self.memory = None, None, None
         else:
@@ -39,6 +43,7 @@ class Overlay(QWidget):
         self.values = (cpu, gpu, ram_percent)
         self.freq = (advanced or {}).get("frequency")
         self.recording = recording
+        self.frame_stats = frame_stats
         self.update()
 
     def paintEvent(self, event):
@@ -66,6 +71,21 @@ class Overlay(QWidget):
             if width > 0:
                 p.setBrush(QColor(color))
                 p.drawRoundedRect(QRectF(85, y+6, width, 6), 3, 3)
+        if self.show_fps:
+            stats = self.frame_stats
+            y = 166 if self.detailed else 140
+            p.setPen(QColor(GRID))
+            p.drawLine(15, y-3, 295, y-3)
+            p.setFont(QFont("Segoe UI", 16, QFont.Weight.DemiBold))
+            p.setPen(QColor(GREEN))
+            p.drawText(QRectF(15, y+3, 125, 25), Qt.AlignmentFlag.AlignVCenter,
+                       f"{stats.fps:.0f} FPS" if stats else "— FPS")
+            p.setFont(QFont("Segoe UI", 9))
+            p.setPen(QColor(MUTED))
+            low = f"{stats.low:.0f}" if stats and stats.low is not None else "—"
+            ms = f"{stats.frametime:.1f}" if stats else "—"
+            p.drawText(QRectF(15, y+30, 280, 19), Qt.AlignmentFlag.AlignVCenter,
+                       f"1% low  {low} FPS   ·   {ms} ms")
         if self.detailed:
             p.setPen(QColor(MUTED))
             p.setFont(QFont("Segoe UI", 8))
@@ -133,21 +153,27 @@ class GamingPage(QWidget):
         self.details = QCheckBox("Zobrazit frekvenci CPU a dostupnou RAM")
         self.details.setChecked(True)
         body.addWidget(self.details)
+        self.fps_visible = QCheckBox("Zobrazit FPS, 1% Low a frametime")
+        self.fps_visible.setChecked(True)
+        body.addWidget(self.fps_visible)
         layout.addWidget(panel)
 
         panel, body = card()
         body.addWidget(label("Živý náhled", "section"))
         body.addWidget(self.preview, 0, Qt.AlignmentFlag.AlignLeft)
-        hint = label("Pro hry použij režim bez okrajů nebo v okně. V exkluzivním fullscreenu nemusí být overlay viditelný. FPS a teploty zatím neměříme.", "muted")
+        hint = label("Pro hry použij režim bez okrajů nebo v okně. V exkluzivním fullscreenu nemusí být overlay viditelný. FPS vyžaduje samostatné měření PresentMon. Teploty zatím neměříme.", "muted")
         hint.setWordWrap(True)
         body.addWidget(hint)
         layout.addWidget(panel)
+        self.fps = FpsPanel()
+        layout.addWidget(self.fps)
         layout.addStretch()
 
         self.screen.currentIndexChanged.connect(self.apply_settings)
         self.corner.currentIndexChanged.connect(self.apply_settings)
         self.opacity.valueChanged.connect(self.apply_settings)
         self.details.toggled.connect(self.apply_settings)
+        self.fps_visible.toggled.connect(self.apply_settings)
         app = QGuiApplication.instance()
         app.screenAdded.connect(self.refresh_screens)
         app.screenRemoved.connect(self.refresh_screens)
@@ -184,7 +210,7 @@ class GamingPage(QWidget):
         value = self.opacity.value()
         self.opacity_text.setText(f"{value} %")
         for overlay in (self.overlay, self.preview):
-            overlay.configure(value, self.details.isChecked())
+            overlay.configure(value, self.details.isChecked(), self.fps_visible.isChecked())
         self.position_overlay()
 
     def toggle_mode(self):
@@ -203,13 +229,15 @@ class GamingPage(QWidget):
             self.overlay.hide()
 
     def refresh(self, basic, gpu, advanced, recording):
+        stats = self.fps.refresh()
         if self.isVisible():
-            self.preview.set_metrics(basic, gpu, advanced, recording)
+            self.preview.set_metrics(basic, gpu, advanced, recording, stats)
         if self.enabled:
             self.position_overlay()
-            self.overlay.set_metrics(basic, gpu, advanced, recording)
+            self.overlay.set_metrics(basic, gpu, advanced, recording, stats)
 
     def shutdown(self):
         self.enabled = False
         self.overlay.close()
+        self.fps.shutdown()
         self.monitor.set_gaming(False)
