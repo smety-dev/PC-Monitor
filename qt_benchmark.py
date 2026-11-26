@@ -23,7 +23,6 @@ class BenchmarkPage(QWidget):
         self.capture = capture
         self.last_path = None
         self.results = [None, None]
-        self.names = ["A – základ", "B – porovnání"]
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.cancel = Event()
         self.future = None
@@ -98,7 +97,7 @@ class BenchmarkPage(QWidget):
         self.analysis_status.setWordWrap(True)
         body.addWidget(self.analysis_status)
         self.t = table(["Metrika", "A", "B", "B proti A"])
-        self.t.setMinimumHeight(410)
+        self.t.setMinimumHeight(425)
         body.addWidget(self.t)
         layout.addWidget(panel)
         panel, body = card()
@@ -152,7 +151,7 @@ class BenchmarkPage(QWidget):
     def update_controls(self):
         active = self.capture.benchmark.active
         self.capture_status.setText("● FPS měření aktivní" if self.capture.active else "FPS měření není spuštěno")
-        self.start_button.setEnabled(self.capture.active and not active and not self.closing)
+        self.start_button.setEnabled(self.capture.active and not active and self.future is None and not self.closing)
         self.stop_button.setEnabled(active)
         self.duration.setEnabled(not active)
         for button_ in self.load_buttons:
@@ -197,7 +196,6 @@ class BenchmarkPage(QWidget):
         else:
             i = self.loading_slot
             self.results[i] = result
-            self.names[i] = self.loading_name
             self.file_labels[i].setText(f"{'AB'[i]}  •  {self.loading_name}")
             self.analysis_status.setText("Porovnávej stejnou scénu a podobnou délku měření.")
             self.render()
