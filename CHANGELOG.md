@@ -2,6 +2,20 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.9.3]
+
+### Changed
+- Continuous GPU counter stream, stale-value expiry and bounded retry delay.
+- Process sampling only while its page is visible; ten-second disk capacity cache.
+- Reuse chart artists, skip identical updates and hidden gaming previews.
+- Cache frame statistics and use partial selection for rolling 1% low.
+- Cooperative CSV analysis cancellation and managed PowerShell shutdown.
+- Shared themed CSV error dialogs and bounded local diagnostic logging.
+
+### Notes
+- No new pip dependencies or changes to CSV format.
+- Windows runtime tests and CPU/RAM performance comparison pending.
+
 ## [0.9.2]
 
 ### Added
