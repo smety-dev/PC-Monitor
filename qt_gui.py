@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QVBox
     QStyle)
 from qt_theme import STYLE, BLUE, GREEN, ORANGE, MetricCard, card, label, button
 from qt_monitor import Monitor
+from diagnostics import configure_logging, LOG
 from qt_gaming import GamingPage
 from qt_settings import SettingsPage
 from preferences import Preferences
@@ -214,6 +215,7 @@ class Window(QMainWindow):
     def navigate(self,index):
         self.group.button(index).setChecked(True)
         self.stack.setCurrentIndex(index)
+        self.monitor.set_process_visible(index == 4 and not self.isMinimized())
         self.prefs.set("startup/last_page", self.views[index][0])
         self.prefs.sync()
         self.title.setText(self.views[index][1])
@@ -221,6 +223,7 @@ class Window(QMainWindow):
             self.render_page()
 
     def refresh(self):
+        self.monitor.set_process_visible(self.stack.currentIndex() == 4 and not self.isMinimized())
         self.hardware.setText(self.monitor.hardware)
         basic = self.monitor.basic
         if basic is not None:
@@ -229,7 +232,7 @@ class Window(QMainWindow):
             self.recording.capture(cpu,ram,gpu,self.monitor.advanced)
             self.history.append((cpu,ram.percent,gpu))
         recording = self.recording.recorder.active
-        self.gaming.refresh(basic, self.monitor.gpu, self.monitor.advanced, recording)
+        self.gaming.refresh(basic, self.monitor.gpu, self.monitor.advanced, recording, not self.isMinimized())
         self.live.setText("●  Záznam probíhá" if recording else
                           "●  Gaming Mode" if self.gaming.enabled else "●  Živé měření")
         if not self.isMinimized():
@@ -311,10 +314,13 @@ class Window(QMainWindow):
         self.monitor.close()
         self.recording.finish()
         self.analysis.shutdown()
+        LOG.info("PC Monitor closed")
         super().closeEvent(event)
 
 
 def main():
+    configure_logging()
+    LOG.info("PC Monitor %s started", __version__)
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     app.setFont(QFont("Segoe UI",10))

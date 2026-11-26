@@ -4,6 +4,7 @@ import time
 import uuid
 from PySide6.QtCore import QObject, QProcess, Signal
 from frame_metrics import FrameStream
+from diagnostics import LOG
 
 from presentmon_bundle import bundled_exe
 from presentmon_errors import capture_error
@@ -32,6 +33,7 @@ class Capture(QObject):
     def report_failure(self, message, details=""):
         if not self.reported_failure:
             self.reported_failure = True
+            LOG.warning("PresentMon capture failed: %s", message)
             self.changed.emit("FPS měření selhalo.")
             self.failed.emit(message, details)
 

@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.9.2 — Early development**
+**Current version: v0.9.3 — Early development**
 
 ## Features
 
@@ -22,6 +22,7 @@ A lightweight Windows application for real-time hardware performance monitoring,
 - Configurable gaming overlay and optional process-sampling suspension
 - Optional PresentMon-based live FPS, frametimes and rolling 1% low
 - Persistent local preferences and themed settings workspace
+- Lower-overhead background sampling, reusable plot artists and bounded local diagnostics
 
 ## Requirements
 
@@ -50,7 +51,7 @@ The hardware pages use psutil without requesting administrator privileges or ins
 
 ## Process manager
 
-Search by process name or PID and click column headings to sort. CPU is normalized to the total logical CPU capacity (0–100%); the first sample is unavailable until a second reading. RAM is the resident working set (RSS) in MiB, not private memory. Protected processes may have unavailable readings. Sampling runs in a background thread; no process termination, administrator elevation or additional dependency is requested.
+Search by process name or PID and click column headings to sort. CPU is normalized to the total logical CPU capacity (0–100%); the first sample is unavailable until a second reading. RAM is the resident working set (RSS) in MiB, not private memory. Protected processes may have unavailable readings. Sampling runs in a background thread only while the process page is selected and the main window is not minimized (unless explicitly suspended by Gaming Mode); no process termination, administrator elevation or additional dependency is requested.
 
 ## Performance recording
 
@@ -80,7 +81,7 @@ FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second wind
 python presentmon_bundle.py --package
 ```
 
-The script creates `dist/PC-Monitor-v0.9.2-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
+The script creates `dist/PC-Monitor-v0.9.3-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
 
 ## Settings & preferences
 
@@ -88,13 +89,19 @@ Open Nastavení to choose whether to restore the last selected page and the main
 
 Preferences are stored locally per Windows user using Qt QSettings (native Windows registry under HKEY_CURRENT_USER\\Software\\smety-dev\\PC Monitor). No new dependencies, network sync or administrator permissions are required. Reset requires confirmation, restores default preferences and geometry, and is unavailable while recording hardware CSV. It does not delete CSV files, PresentMon files or other registry keys. Active Gaming Mode, game process IDs, frame capture and CSV recording sessions are never automatically started on launch.
 
+## Performance & stability
+
+GPU 3D utilization uses one continuous PowerShell counter stream at two-second intervals instead of launching PowerShell for every sample. Counter failures retry with bounded backoff; stale values expire after eight seconds. The process list is sampled only while its page is visible, and existing Gaming Mode suspension still applies. Disk capacity is refreshed every ten seconds; CPU/RAM and disk/network throughput retain their one-second sampling cadence. Live plots reuse line artists and skip identical updates; hidden gaming previews do not redraw. Frame statistics are cached until new data arrives and use a partial selection of the slowest intervals for 1% low. Offline analysis checks cancellation when the window closes. CSV and PresentMon errors use the shared themed error dialog where applicable.
+
+Local diagnostic messages are written to `%LOCALAPPDATA%/PC Monitor/logs/diagnostics.log` (512 KiB per file, two rotated backups). No telemetry is uploaded; logs do not store raw CSV contents or process lists. If storage is unavailable, diagnostics are disabled without stopping monitoring. Windows GPU counter availability, shutdown behavior and actual performance gains require testing on a real system; no benchmark numbers are claimed.
+
 ## Testing
 
 ```powershell
 python -m unittest discover -v
 ```
 
-Run the application and exercise all nine pages after installing requirements. The automated tests cover monitoring, CSV logic, overlay helpers, frame metric calculations, PresentMon bundle verification and error handling, preferences, and version metadata consistency.
+Run the application and exercise all nine pages after installing requirements. The automated tests cover monitoring, CSV logic, overlay helpers, frame metric calculations, PresentMon bundle verification and error handling, preferences, performance/stability helpers, and version metadata consistency.
 
 ## Versioning
 

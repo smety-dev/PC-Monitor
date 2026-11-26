@@ -1,6 +1,7 @@
 """PresentMon 2.3.1 legacy CSV metrics, independent of Qt and Windows."""
 import csv
 import math
+from heapq import nlargest
 from collections import deque
 from dataclasses import dataclass
 from statistics import fmean
@@ -28,6 +29,7 @@ class FrameStream:
         self.chains = {}
         self.latest = None
         self.last_received = None
+        self.cached = None
 
     def feed(self, line, received):
         try:
@@ -62,11 +64,14 @@ class FrameStream:
         frames.append((timestamp, ms))
         self.latest = timestamp if self.latest is None else max(self.latest, timestamp)
         self.last_received = received
+        self.cached = None
         return True
 
     def snapshot(self, now):
         if self.latest is None or now - self.last_received > 3:
             return None
+        if self.cached is not None:
+            return self.cached
         recent = {}
         for key, frames in self.chains.items():
             while frames and frames[0][0] < self.latest - WINDOW_SECONDS:
@@ -84,7 +89,8 @@ class FrameStream:
         mean = fmean(current)
         low = None
         if len(values) >= 100:
-            slowest = sorted(values, reverse=True)[:math.ceil(len(values)*.01)]
+            slowest = nlargest(math.ceil(len(values)*.01), values)
             low = 1000 / fmean(slowest)
-        return FrameStats(1000 / mean, 1000 / fmean(values), mean, low,
-                          len(values), chain, tuple(values[-120:]))
+        self.cached = FrameStats(1000 / mean, 1000 / fmean(values), mean, low,
+                                 len(values), chain, tuple(values[-120:]))
+        return self.cached
