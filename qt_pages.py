@@ -54,6 +54,7 @@ class Plot(FigureCanvasQTAgg):
         self.ax = self.figure.add_subplot(111)
         self.figure.subplots_adjust(left=.10, right=.97, top=.90, bottom=.18)
         self.setMinimumHeight(235)
+        self.render([], [], True)
 
     def render(self, x, lines, percentage=False, xlabel="Uplynulý čas (s)"):
         a = self.ax
@@ -71,6 +72,12 @@ class Plot(FigureCanvasQTAgg):
             a.set_ylim(0, 100)
         else:
             a.set_ylim(bottom=0)
+        if not lines:
+            a.set_xticks([])
+            a.set_yticks([])
+            a.set_xlabel("")
+            a.text(.5, .5, "Zatím nejsou k dispozici žádná data", transform=a.transAxes,
+                   ha="center", va="center", color=MUTED, fontsize=12)
         if lines:
             a.legend(frameon=False, labelcolor=TEXT, loc="upper left", ncol=min(3,len(lines)))
         self.draw_idle()
