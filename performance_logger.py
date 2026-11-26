@@ -10,6 +10,26 @@ FIELDS = (
 )
 
 
+CSV_HEADERS = (
+    "Datum a čas", "Uplynulý čas (s)", "CPU (%)", "RAM (%)",
+    "Volná RAM (MiB)", "GPU 3D (%)", "Frekvence CPU (MHz)",
+    "Disk čtení (MiB/s)", "Disk zápis (MiB/s)",
+    "Síť příjem (MiB/s)", "Síť odesílání (MiB/s)",
+)
+
+
+def excel_number(value):
+    if value is None:
+        return ""
+    return str(value).replace(".", ",")
+
+
+def excel_row(row):
+    stamp = datetime.fromisoformat(row["timestamp"])
+    return [stamp.strftime("%d.%m.%Y %H:%M:%S"), 
+            *(excel_number(row[key]) for key in FIELDS[1:])]
+
+
 def make_row(elapsed, cpu, ram_percent, ram_available, gpu, advanced, timestamp=None):
     advanced = advanced or {}
     disk = advanced.get("disk_rates") or (None, None)
@@ -47,8 +67,8 @@ class PerformanceRecorder:
         # Exclusive creation prevents accidental overwrite.
         file = open(path, "x", newline="", encoding="utf-8-sig")
         try:
-            writer = csv.DictWriter(file, fieldnames=FIELDS, delimiter=";")
-            writer.writeheader()
+            writer = csv.writer(file, delimiter=";")
+            writer.writerow(CSV_HEADERS)
             file.flush()
         except Exception:
             file.close()
@@ -64,8 +84,8 @@ class PerformanceRecorder:
         self.elapsed = now - self.started
         if now < self.next_sample:
             return False
-        self.writer.writerow(make_row(self.elapsed, cpu, ram_percent,
-                                      ram_available, gpu, advanced))
+        self.writer.writerow(excel_row(make_row(self.elapsed, cpu, ram_percent,
+                                      ram_available, gpu, advanced)))
         self.file.flush()
         self.count += 1
         # Skip missed periods rather than inventing historical samples.
