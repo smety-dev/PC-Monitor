@@ -1,4 +1,5 @@
 """Qt workspaces for process monitoring, recording and analysis."""
+from i18n import tr, decimal
 from datetime import datetime
 from bisect import bisect_left
 import math
@@ -32,7 +33,7 @@ def configure_chart_fonts(family):
 
 def table(headers):
     t = QTableWidget(0, len(headers))
-    t.setHorizontalHeaderLabels(headers)
+    t.setHorizontalHeaderLabels([tr(header) for header in headers])
     t.verticalHeader().hide()
     t.verticalHeader().setDefaultSectionSize(36)
     t.setAlternatingRowColors(True)
@@ -70,7 +71,7 @@ def populate(t, rows):
 
 
 def fmt(value, decimals=1):
-    return "—" if value is None else f"{value:.{decimals}f}".replace(".", ",")
+    return "—" if value is None else decimal(f"{value:.{decimals}f}")
 
 
 class Plot(FigureCanvasQTAgg):
@@ -121,8 +122,8 @@ class Plot(FigureCanvasQTAgg):
             self.hide_hover()
             return
         suffix = "%" if percentage else unit
-        heading = ("Nejnovější vzorek" if abs(x[i]) < .05 else f"{abs(x[i]):.1f} s zpět") if rolling else f"{x[i]:.2f}".rstrip("0").rstrip(".")
-        texts = [heading.replace(".", ",")]
+        heading = (tr("Nejnovější vzorek") if abs(x[i]) < .05 else tr(f"{abs(x[i]):.1f} s zpět")) if rolling else f"{x[i]:.2f}".rstrip("0").rstrip(".")
+        texts = [decimal(tr(heading))]
         for name, _, values in lines:
             value = values[i]
             if value is not None and math.isfinite(value):
@@ -155,8 +156,9 @@ class Plot(FigureCanvasQTAgg):
     def render(self, x, lines, percentage=False, xlabel="Uplynulý čas (s)",
                *, unit="", rolling_seconds=None):
         # Retain axes and line artists across ordinary updates.
+        xlabel = tr(xlabel)
         x = tuple(x)
-        lines = [(name, color, tuple(values)) for name, color, values in lines]
+        lines = [(tr(name), color, tuple(values)) for name, color, values in lines]
         layout_key = (percentage, xlabel, unit, rolling_seconds, tuple((name, color) for name, color, _ in lines))
         data_key = (x, tuple(values for _, _, values in lines))
         if layout_key == self._layout_key and data_key == self._data_key:
@@ -171,13 +173,13 @@ class Plot(FigureCanvasQTAgg):
             a.grid(axis="y", color=GRID, alpha=.8, linewidth=.8)
             a.xaxis.set_major_locator(MaxNLocator(nbins=5))
             a.yaxis.set_major_locator(MaxNLocator(nbins=4))
-            a.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}".replace(".", ",") + ("%" if percentage else "")))
+            a.yaxis.set_major_formatter(FuncFormatter(lambda v, _: decimal(f"{v:g}") + ("%" if percentage else "")))
             a.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}".replace(".", ",")))
             if percentage:
                 a.yaxis.set_major_locator(FixedLocator([0, 25, 50, 75, 100]))
             if rolling_seconds:
                 a.xaxis.set_major_locator(FixedLocator([-rolling_seconds, -.75*rolling_seconds, -.5*rolling_seconds, -.25*rolling_seconds, 0]))
-                a.xaxis.set_major_formatter(FuncFormatter(lambda v, _: "Teď" if abs(v) < .01 else f"−{abs(v):g} s"))
+                a.xaxis.set_major_formatter(FuncFormatter(lambda v, _: tr("Teď") if abs(v) < .01 else f"−{abs(v):g} s"))
             for spine in a.spines.values():
                 spine.set_visible(False)
             a.set_xlabel(xlabel, color=MUTED, fontsize=9, labelpad=6)
@@ -190,7 +192,7 @@ class Plot(FigureCanvasQTAgg):
                 a.set_xticks([])
                 a.set_yticks([])
                 a.set_xlabel("")
-                a.text(.5, .5, "Zatím nejsou k dispozici žádná data", transform=a.transAxes,
+                a.text(.5, .5, tr("Zatím nejsou k dispozici žádná data"), transform=a.transAxes,
                        ha="center", va="center", color=MUTED, fontsize=12)
         for artist, (_, _, values) in zip(self._artists, lines):
             artist.set_data(x, [float("nan") if value is None else value for value in values])
@@ -227,18 +229,18 @@ class Processes(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2 * SPACE)
         self.search = QLineEdit()
-        self.search.setPlaceholderText("Hledat podle názvu nebo PID…")
+        self.search.setPlaceholderText(tr("Hledat podle názvu nebo PID…"))
         self.search.setClearButtonEnabled(True)
         layout.addWidget(self.search)
-        self.status = label("Čekám na data", "muted")
+        self.status = label(tr("Čekám na data"), "muted")
         layout.addWidget(self.status)
-        self.t = table(["Proces", "PID", "CPU (%)", "RAM (MiB)"])
+        self.t = table([tr("Proces"), "PID", "CPU (%)", "RAM (MiB)"])
         self.t.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for i in (1,2,3):
             self.t.horizontalHeader().setSectionResizeMode(i,QHeaderView.ResizeMode.Fixed)
             self.t.setColumnWidth(i,110)
         layout.addWidget(self.t)
-        hint = label("Kliknutím na hlavičku seřadíš procesy. CPU je podíl celkového výkonu; RAM je rezidentní paměť (RSS). — znamená nedostupná data.", "muted")
+        hint = label(tr("Kliknutím na hlavičku seřadíš procesy. CPU je podíl celkového výkonu; RAM je rezidentní paměť (RSS). — znamená nedostupná data."), "muted")
         hint.setWordWrap(True)
         layout.addWidget(hint)
         self.rows = None
@@ -264,7 +266,7 @@ class Processes(QWidget):
     def render(self, *_):
         rows = filter_sort(self.rows or (), self.search.text(), self.key, self.desc)
         populate(self.t, [(r.name,r.pid,fmt(r.cpu),fmt(None if r.rss is None else r.rss/1024**2)) for r in rows])
-        self.status.setText("Čekám na data" if self.rows is None else f"{len(rows)} / {len(self.rows)} procesů")
+        self.status.setText(tr("Čekám na data") if self.rows is None else tr(f"{len(rows)} / {len(self.rows)} procesů"))
 
 
 class Recording(QWidget):
@@ -276,35 +278,35 @@ class Recording(QWidget):
         layout.setSpacing(2 * SPACE)
         panel, body = card()
         layout.addWidget(panel)
-        body.addWidget(label("Záznam výkonu do CSV", "section"))
-        self.status = label("Připraveno k záznamu", "status")
+        body.addWidget(label(tr("Záznam výkonu do CSV"), "section"))
+        self.status = label(tr("Připraveno k záznamu"), "status")
         body.addWidget(self.status)
-        hint = label("Zvol interval, spusť měření a vyber, kam uložit soubor CSV.", "muted")
+        hint = label(tr("Zvol interval, spusť měření a vyber, kam uložit soubor CSV."), "muted")
         hint.setWordWrap(True)
         body.addWidget(hint)
-        self.stats = label("0 vzorků  ·  0 s", "value")
+        self.stats = label(tr("0 vzorků  ·  0 s"), "value")
         body.addWidget(self.stats)
         controls = QHBoxLayout()
         controls.addWidget(label("Interval"))
         self.interval = QComboBox()
         self.interval.addItems(["1","2","5","10"])
         controls.addWidget(self.interval)
-        controls.addWidget(label("sekund", "muted"))
+        controls.addWidget(label(tr("sekund"), "muted"))
         controls.addStretch()
-        self.start_button = button("Spustit záznam",True)
-        self.stop_button = button("Zastavit")
+        self.start_button = button(tr("Spustit záznam"),True)
+        self.stop_button = button(tr("Zastavit"))
         controls.addWidget(self.start_button)
         controls.addWidget(self.stop_button)
         body.addLayout(controls)
-        self.path = label("Soubor zatím nebyl vybrán","muted")
+        self.path = label(tr("Soubor zatím nebyl vybrán"),"muted")
         self.path.setWordWrap(True)
         body.addWidget(self.path)
         self.start_button.clicked.connect(self.start)
         self.stop_button.clicked.connect(self.finish)
         panel, body = card()
-        body.addWidget(label("Ukládané metriky","section"))
-        body.addWidget(label("CPU · RAM · GPU 3D · frekvence CPU · disky · síť"))
-        msg = label("Záznam pokračuje při přepínání stránek. Data zůstávají v místním CSV.","muted")
+        body.addWidget(label(tr("Ukládané metriky"),"section"))
+        body.addWidget(label(tr("CPU · RAM · GPU 3D · frekvence CPU · disky · síť")))
+        msg = label(tr("Záznam pokračuje při přepínání stránek. Data zůstávají v místním CSV."),"muted")
         msg.setWordWrap(True)
         body.addWidget(msg)
         layout.addWidget(panel)
@@ -316,11 +318,11 @@ class Recording(QWidget):
         self.start_button.setEnabled(not active)
         self.stop_button.setEnabled(active)
         self.interval.setEnabled(not active)
-        self.stats.setText(f"{self.recorder.count} vzorků  ·  {self.recorder.elapsed:.0f} s")
+        self.stats.setText(tr(f"{self.recorder.count} vzorků  ·  {self.recorder.elapsed:.0f} s"))
         self.status.setStyleSheet("color: " + (GREEN if active else MUTED))
 
     def start(self):
-        path,_ = QFileDialog.getSaveFileName(self,"Uložit záznam",datetime.now().strftime("pc-monitor-%Y%m%d-%H%M%S.csv"),"CSV (*.csv)")
+        path,_ = QFileDialog.getSaveFileName(self,tr("Uložit záznam"),datetime.now().strftime("pc-monitor-%Y%m%d-%H%M%S.csv"),"CSV (*.csv)")
         if not path:
             return
         if not path.lower().endswith(".csv"):
@@ -329,19 +331,19 @@ class Recording(QWidget):
             self.recorder.start(path,int(self.interval.currentText()))
         except (OSError,ValueError,RuntimeError) as exc:
             LOG.warning("CSV start failed: %s", type(exc).__name__)
-            ErrorDialog(self.window(), "Záznam nelze spustit", "Zkontroluj cílový soubor a oprávnění.", str(exc)).exec()
+            ErrorDialog(self.window(), tr("Záznam nelze spustit"), tr("Zkontroluj cílový soubor a oprávnění."), str(exc)).exec()
             return
         self.path.setText(path)
-        self.status.setText("● Probíhá záznam")
+        self.status.setText(tr("● Probíhá záznam"))
         self.controls()
 
     def finish(self):
         try:
             self.recorder.stop()
-            self.status.setText("Záznam ukončen")
+            self.status.setText(tr("Záznam ukončen"))
         except OSError as exc:
             LOG.warning("CSV close failed: %s", type(exc).__name__)
-            self.status.setText("Chyba při ukončování záznamu: " + str(exc))
+            self.status.setText(tr("Chyba při ukončování záznamu: ") + str(exc))
         self.controls()
 
     def capture(self,cpu,ram,gpu,advanced):
@@ -352,8 +354,8 @@ class Recording(QWidget):
             except (OSError,ValueError) as exc:
                 self.finish()
                 LOG.warning("CSV write failed: %s", type(exc).__name__)
-                self.status.setText("Chyba zápisu: "+str(exc))
-                ErrorDialog(self.window(), "Záznam byl zastaven", "Zápis do CSV selhal.", str(exc)).exec()
+                self.status.setText(tr("Chyba zápisu: ")+str(exc))
+                ErrorDialog(self.window(), tr("Záznam byl zastaven"), tr("Zápis do CSV selhal."), str(exc)).exec()
 
 
 GROUPS = {
@@ -384,21 +386,22 @@ class Analysis(QWidget):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.poll)
         bar = QHBoxLayout()
-        self.open_button = button("Načíst CSV",True)
+        self.open_button = button(tr("Načíst CSV"),True)
         self.open_button.clicked.connect(self.open)
         bar.addWidget(self.open_button)
         bar.addStretch()
         self.group = QComboBox()
-        self.group.addItems(list(GROUPS))
-        self.group.currentTextChanged.connect(self.draw)
+        for key in GROUPS:
+            self.group.addItem(tr(key), key)
+        self.group.currentIndexChanged.connect(self.draw)
         bar.addWidget(self.group)
         layout.addLayout(bar)
-        self.info = label("Začni výběrem uloženého hardwarového CSV ze sekce Záznam.", "muted")
+        self.info = label(tr("Začni výběrem uloženého hardwarového CSV ze sekce Záznam."), "muted")
         self.info.setWordWrap(True)
         layout.addWidget(self.info)
         kpis = QHBoxLayout()
         self.kpis = {}
-        for key,title,color in (("cpu_percent","Průměr CPU",BLUE),("gpu_3d_percent","Průměr GPU",GREEN),("ram_percent","Průměr RAM",ORANGE)):
+        for key,title,color in (("cpu_percent",tr("Průměr CPU"),BLUE),("gpu_3d_percent",tr("Průměr GPU"),GREEN),("ram_percent",tr("Průměr RAM"),ORANGE)):
             panel,body = card()
             body.addWidget(label(title,"muted"))
             value = label("—","value")
@@ -408,11 +411,11 @@ class Analysis(QWidget):
             kpis.addWidget(panel)
         layout.addLayout(kpis)
         panel,body = card()
-        body.addWidget(label("Průběh měření","section"))
+        body.addWidget(label(tr("Průběh měření"),"section"))
         self.plot = Plot()
         body.addWidget(self.plot)
         layout.addWidget(panel,1)
-        self.t = table(["Metrika","Minimum","Průměr","Maximum","Vzorky"])
+        self.t = table([tr("Metrika"),"Minimum",tr("Průměr"),"Maximum",tr("Vzorky")])
         self.t.setMinimumHeight(330)
         layout.addWidget(self.t)
         self.hints = label("", "muted")
@@ -420,12 +423,12 @@ class Analysis(QWidget):
         layout.addWidget(self.hints)
 
     def open(self):
-        path,_ = QFileDialog.getOpenFileName(self,"Načíst záznam","","CSV (*.csv)")
+        path,_ = QFileDialog.getOpenFileName(self,tr("Načíst záznam"),"","CSV (*.csv)")
         if not path or self.future is not None:
             return
         self.filename = Path(path).name
         self.open_button.setEnabled(False)
-        self.info.setText("Načítám…")
+        self.info.setText(tr("Načítám…"))
         self.cancel.clear()
         self.future = self.executor.submit(analyze,path,self.cancel)
         self.timer.start(100)
@@ -437,21 +440,21 @@ class Analysis(QWidget):
         try:
             rows,skipped,stats,hints = self.future.result()
         except Exception as exc:
-            self.info.setText("Načtení selhalo")
+            self.info.setText(tr("Načtení selhalo"))
             LOG.warning("CSV analysis failed: %s", type(exc).__name__)
-            ErrorDialog(self.window(), "Neplatný záznam", "Soubor se nepodařilo analyzovat.", str(exc)).exec()
+            ErrorDialog(self.window(), tr("Neplatný záznam"), tr("Soubor se nepodařilo analyzovat."), str(exc)).exec()
         else:
             self.rows = rows
-            self.info.setText(f"{self.filename}  ·  {len(rows)} vzorků  ·  {rows[-1]['elapsed_s']:.1f} s  ·  vynecháno {skipped}")
+            self.info.setText(tr(f"{self.filename}  ·  {len(rows)} vzorků  ·  {rows[-1]['elapsed_s']:.1f} s  ·  vynecháno {skipped}"))
             for key,value in self.kpis.items():
                 value.setText(fmt(stats[key][1])+" %" if stats[key] else "N/A")
             values = []
             for group,metrics in GROUPS.items():
                 for key,name,_ in metrics:
                     stat = stats[key]
-                    values.append((name+" "+group[group.index("("):],*(tuple(fmt(v,2) for v in stat[:3])+(stat[3],) if stat else ("N/A","N/A","N/A",0))))
+                    values.append((tr(name)+" "+group[group.index("("):],*(tuple(fmt(v,2) for v in stat[:3])+(stat[3],) if stat else ("N/A","N/A","N/A",0))))
             populate(self.t,values)
-            self.hints.setText("\n".join(hints))
+            self.hints.setText("\n".join(tr(hint) for hint in hints))
             self.draw()
         finally:
             self.future = None
@@ -464,9 +467,9 @@ class Analysis(QWidget):
         rows = self.rows[::step]
         if rows[-1] is not self.rows[-1]:
             rows.append(self.rows[-1])
-        group = self.group.currentText()
+        group = self.group.currentData()
         self.plot.render([r["elapsed_s"] for r in rows],
-                         [(name,color,[r[key] for r in rows]) for key,name,color in GROUPS[group]],
+                         [(tr(name),color,[r[key] for r in rows]) for key,name,color in GROUPS[group]],
                          group=="Vytížení (%)")
 
     def shutdown(self):
