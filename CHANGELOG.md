@@ -4,6 +4,9 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 
 ## [0.8.4]
 
+### Changed
+- Unified dark design system, compact metric cards, refined sidebar, styled controls and tables, and analysis KPI cards.
+
 ### Added
 - Offline CSV analyzer supporting Czech and original English recordings.
 - Selectable utilization, disk, network, frequency and available-memory charts.
