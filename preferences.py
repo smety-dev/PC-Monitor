@@ -48,6 +48,7 @@ class Preferences:
         if store is None:
             from PySide6.QtCore import QSettings
             store = QSettings("smety-dev", "PC Monitor")
+            store.setFallbacksEnabled(False)
         self.store = store
 
     def get(self, key):
