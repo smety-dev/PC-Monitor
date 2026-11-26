@@ -200,3 +200,34 @@ def analyze_benchmark(path, cancel=None):
     return BenchmarkResult(chain, len(chains), count, total, times[-1] - times[0],
                            1000 / mean, low, mean, typical, max(values),
                            stutters, threshold, severe, fps, tuple(peaks))
+
+
+def create_demo(path, improved=False):
+    """Create clearly synthetic samples for testing the analyzer without ETW."""
+    with open(path, "x", encoding="utf-8-sig", newline="") as file:
+        writer = csv.writer(file, delimiter=";")
+        writer.writerow(HEADER)
+        elapsed = 0.0
+        index = 0
+        while elapsed < 30:
+            ms = (11.5 if improved else 16.5) + (index % 9 - 4) * 0.25
+            if index % (240 if improved else 90) == 45:
+                ms = 45.0 if improved else 85.0
+            elapsed += ms / 1000
+            if elapsed <= 30:
+                writer.writerow((format(elapsed, ".9f").replace(".", ","), "demo", str(ms).replace(".", ",")))
+            index += 1
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Create synthetic benchmark CSV files for UI testing")
+    parser.add_argument("--demo", action="store_true", required=True)
+    parser.parse_args()
+    for name, improved in (("A", False), ("B", True)):
+        path = f"pc-monitor-benchmark-demo-{name}.csv"
+        try:
+            create_demo(path, improved)
+            print("Created synthetic demo:", path)
+        except FileExistsError:
+            print("Existing file preserved:", path)
