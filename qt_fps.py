@@ -1,9 +1,10 @@
 """FPS capture panel shared with the gaming workspace."""
 from pathlib import Path
 import psutil
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QFileDialog
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog
 from qt_theme import card, label, button, BLUE, GREEN, ORANGE
 from qt_pages import Plot
+from process_picker import ProcessPicker
 from presentmon_capture import Capture, DEFAULT_EXE
 
 
@@ -12,6 +13,7 @@ class FpsPanel(QWidget):
         super().__init__()
         self.capture = Capture(self)
         self.path = DEFAULT_EXE if DEFAULT_EXE.is_file() else None
+        self.target = None
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
@@ -26,14 +28,12 @@ class FpsPanel(QWidget):
         row.addWidget(self.choose)
         body.addLayout(row)
         row = QHBoxLayout()
-        self.target = QComboBox()
-        self.target.setMinimumWidth(180)
-        self.target.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-        self.target.setMinimumContentsLength(18)
-        row.addWidget(self.target, 1)
-        self.reload = button("Obnovit procesy")
-        self.reload.clicked.connect(self.refresh_processes)
-        row.addWidget(self.reload)
+        self.target_label = label("Herní proces nebyl vybrán", "muted")
+        self.target_label.setWordWrap(True)
+        row.addWidget(self.target_label, 1)
+        self.pick = button("Vybrat hru / aplikaci")
+        self.pick.clicked.connect(self.pick_process)
+        row.addWidget(self.pick)
         body.addLayout(row)
         row = QHBoxLayout()
         self.start_button = button("Spustit FPS měření", True)
@@ -78,25 +78,19 @@ class FpsPanel(QWidget):
             self.binary.setText(self.path.name)
             self.update_controls()
 
-    def refresh_processes(self):
+    def pick_process(self):
         if self.capture.active:
             return
-        previous = self.target.currentData()
-        rows = []
-        for proc in psutil.process_iter(["pid", "name", "create_time"], ad_value=None):
-            info = proc.info
-            if info["pid"] and info["name"] and info["create_time"] is not None:
-                rows.append((info["name"], info["pid"], info["create_time"]))
-        self.target.clear()
-        self.target.addItem("Vyber herní proces…", None)
-        for name, pid, created in sorted(rows, key=lambda r: (r[0].casefold(), r[1])):
-            self.target.addItem(f"{name}  (PID {pid})", (pid, created))
-        index = self.target.findData(previous)
-        self.target.setCurrentIndex(max(0, index))
-        self.update_controls()
+        dialog = ProcessPicker(self, self.target)
+        if dialog.exec() and dialog.selected:
+            selected = dialog.selected
+            self.target = (selected.pid, selected.created)
+            self.target_label.setText(f"{selected.name}  ·  PID {selected.pid}")
+            self.target_label.setToolTip(selected.title)
+            self.update_controls()
 
     def start(self):
-        target = self.target.currentData()
+        target = self.target
         if not target or not self.path:
             self.status.setText("Nejdříve vyber PresentMon a herní proces.")
             return
@@ -105,16 +99,16 @@ class FpsPanel(QWidget):
             if psutil.Process(pid).create_time() != created:
                 raise ValueError("Proces byl nahrazen.")
         except (psutil.Error, OSError, ValueError):
-            self.status.setText("Proces již neběží. Obnov seznam a vyber jej znovu.")
+            self.status.setText("Proces již neběží. Vyber jej znovu.")
             return
         self.capture.start(self.path, pid)
         self.update_controls()
 
     def update_controls(self):
         active = self.capture.active
-        self.start_button.setEnabled(not active and self.path is not None)
+        self.start_button.setEnabled(not active and self.path is not None and self.target is not None)
         self.stop_button.setEnabled(active)
-        for widget in (self.choose, self.reload, self.target):
+        for widget in (self.choose, self.pick):
             widget.setEnabled(not active)
 
     def refresh(self):
