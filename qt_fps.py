@@ -94,8 +94,7 @@ class FpsPanel(QWidget):
     def check_module(self):
         self.path = bundled_exe()
         self.binary.setText("PresentMon 2.3.1 • ověřený modul" if self.path else "PresentMon chybí nebo není ověřen")
-        self.status.setText("Modul připraven. Vyber hru." if self.path else
-                            "Spusť python presentmon_bundle.py v terminálu projektu.")
+        self.status.setText("Modul připraven. Vyber hru." if self.path else self.missing_hint)
         self.update_controls()
         if self.path is None:
             self.show_capture_error(self.missing_hint)
