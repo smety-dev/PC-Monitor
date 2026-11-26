@@ -1,7 +1,7 @@
 """Searchable, sortable read-only process table."""
 import tkinter as tk
 from tkinter import ttk
-from dashboard_ui import BG, PANEL, TRACK, TEXT, MUTED, BLUE, FONT, label
+from dashboard_ui import BG, PANEL, TRACK, TEXT, MUTED, BLUE, FONT, label, table_style, stripe_table
 from process_metrics import filter_sort
 
 
@@ -16,26 +16,19 @@ class ProcessPage(tk.Frame):
         tools.pack(fill="x", pady=(0, 10))
         label(tools, "Hledat název nebo PID:", 10, MUTED, bg=BG).pack(side="left", padx=(0, 8))
         entry = tk.Entry(tools, textvariable=self.query, bg=PANEL, fg=TEXT,
-                         insertbackground=TEXT, relief="flat", font=(FONT, 11))
+                         insertbackground=TEXT, relief="flat", highlightthickness=1,
+                         highlightbackground=TRACK, highlightcolor=BLUE, font=(FONT, 11))
         entry.pack(side="left", fill="x", expand=True, ipady=6)
         self.status = label(self, "Čekám na první vzorek…", 10, MUTED, bg=BG)
         self.status.pack(anchor="w", pady=(0, 8))
 
-        style = ttk.Style(self)
-        style.configure("Processes.Treeview", background=PANEL, fieldbackground=PANEL,
-                        foreground=TEXT, rowheight=28, borderwidth=0, font=(FONT, 10))
-        style.configure("Processes.Treeview.Heading", background=TRACK,
-                        foreground=TEXT, font=(FONT, 10, "bold"), relief="flat")
-        style.map("Processes.Treeview.Heading",
-                  background=[("pressed", "#284568"), ("active", "#40536b")],
-                  foreground=[("pressed", TEXT), ("active", TEXT)])
-        style.map("Processes.Treeview", background=[("selected", "#284568")],
-                  foreground=[("selected", TEXT)])
+        table_style(self, "Processes.Treeview")
         frame = tk.Frame(self, bg=BG)
         frame.pack(fill="both", expand=True)
         self.table = ttk.Treeview(frame, columns=("name", "pid", "cpu", "rss"),
                                  show="headings", style="Processes.Treeview",
                                  selectmode="browse")
+        stripe_table(self.table)
         self.columns = {"name": "Proces", "pid": "PID", "cpu": "CPU (%)", "rss": "RAM (MiB)"}
         for key, title in self.columns.items():
             self.table.heading(key, text=title, command=lambda k=key: self.sort_by(k))
@@ -86,10 +79,10 @@ class ProcessPage(tk.Frame):
                       "N/A" if row.cpu is None else f"{row.cpu:.1f}",
                       "N/A" if row.rss is None else f"{row.rss / 1024**2:.1f}")
             if self.table.exists(iid):
-                self.table.item(iid, values=values)
+                self.table.item(iid, values=values, tags=("odd" if index % 2 else "even",))
                 self.table.move(iid, "", index)
             else:
-                self.table.insert("", index, iid=iid, values=values)
+                self.table.insert("", index, iid=iid, values=values, tags=("odd" if index % 2 else "even",))
         if selected and self.table.exists(selected[0]):
             self.table.selection_set(selected[0])
         self.table.yview_moveto(position)
