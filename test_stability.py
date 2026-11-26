@@ -5,7 +5,7 @@ from threading import Event
 from types import SimpleNamespace
 from unittest.mock import patch, Mock
 
-from qt_monitor import Monitor, gpu_value
+from qt_monitor import Monitor, gpu_value, hardware_names, gpu_description
 from hardware_metrics import Sampler
 from frame_metrics import FrameStream
 from performance_analysis import read_recording, summarize, utilization_hints
@@ -17,6 +17,15 @@ class StabilityTests(unittest.TestCase):
         self.assertEqual(gpu_value("105"), 100)
         for raw in ("", "N/A", "-1", "inf", "nan"):
             self.assertIsNone(gpu_value(raw))
+
+    def test_hardware_names_and_gpu_description(self):
+        cpus, gpus = hardware_names("CPU: Intel Core i5\nGPU: Intel(R) UHD Graphics 770\n")
+        self.assertEqual(cpus, ("Intel Core i5",))
+        self.assertEqual(gpus, ("Intel(R) UHD Graphics 770",))
+        self.assertEqual(gpu_description(gpus), "Intel(R) UHD Graphics 770")
+        self.assertEqual(gpu_description(("Intel GPU", "AMD GPU")), "Více GPU · maximum 3D")
+        self.assertEqual(gpu_description(()), "Název GPU nedostupný")
+        self.assertEqual(hardware_names("GPU: \nunknown\n"), ((), ()))
 
     def test_gpu_stale(self):
         monitor = Monitor()

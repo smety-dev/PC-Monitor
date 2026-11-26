@@ -34,6 +34,28 @@ def gpu_value(line):
     return round(min(100.0, value), 1) if math.isfinite(value) and value >= 0 else None
 
 
+def hardware_names(output):
+    """Keep processor and display adapter names separate, without guessing adapter IDs."""
+    cpus, gpus = [], []
+    for line in output.splitlines():
+        kind, sep, name = line.partition(":")
+        name = name.strip()
+        if sep and name:
+            if kind.strip() == "CPU":
+                cpus.append(name)
+            elif kind.strip() == "GPU":
+                gpus.append(name)
+    return tuple(cpus), tuple(gpus)
+
+
+def gpu_description(names):
+    if len(names) == 1:
+        return names[0]
+    if len(names) > 1:
+        return "Více GPU · maximum 3D"
+    return "Název GPU nedostupný"
+
+
 class Monitor:
     def __init__(self):
         self.stop_event = threading.Event()
@@ -44,6 +66,7 @@ class Monitor:
         self.processes = None
         self._gpu_sample = (None, 0.0)
         self.hardware = "Detekuji hardware…"
+        self.gpu_names = ()
         self.children = set()
         self.child_lock = threading.Lock()
         self.threads = []
@@ -148,14 +171,16 @@ class Monitor:
         child = None
         try:
             child = self.launch("""
-Get-CimInstance Win32_Processor | Select-Object -ExpandProperty Name
-Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name
+Get-CimInstance Win32_Processor | ForEach-Object { 'CPU: ' + $_.Name }
+Get-CimInstance Win32_VideoController | ForEach-Object { 'GPU: ' + $_.Name }
 """)
             if child is not None:
                 output, _ = child.communicate(timeout=10)
                 if child.returncode:
                     raise OSError("Hardware query failed")
-                self.hardware = output.strip().replace("\n", "  ·  ") or "Detekce hardwaru nedostupná"
+                cpus, gpus = hardware_names(output)
+                self.gpu_names = gpus
+                self.hardware = "  ·  ".join(cpus + gpus) or "Detekce hardwaru nedostupná"
         except (OSError, subprocess.SubprocessError):
             self.hardware = "Detekce hardwaru nedostupná"
             if not self.stop_event.is_set():

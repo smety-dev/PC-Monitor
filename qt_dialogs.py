@@ -1,7 +1,7 @@
 """Shared, non-blocking PC Monitor error dialog."""
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPlainTextEdit, QApplication
-from qt_theme import card, label, button, ORANGE
+from qt_theme import card, label, button, ORANGE, SPACE
 
 
 class ErrorDialog(QDialog):
@@ -13,7 +13,7 @@ class ErrorDialog(QDialog):
         self.setMinimumWidth(420)
         self.resize(490, 260)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setContentsMargins(2 * SPACE, 2 * SPACE, 2 * SPACE, 2 * SPACE)
         panel, body = card()
         layout.addWidget(panel)
         header = label("!   UPOZORNĚNÍ", "muted")
@@ -30,7 +30,6 @@ class ErrorDialog(QDialog):
             self.details.setReadOnly(True)
             self.details.setPlainText(details)
             self.details.setMaximumHeight(160)
-            self.details.setStyleSheet("QPlainTextEdit { background: #0a0e17; border: 1px solid #26344a; border-radius: 8px; padding: 8px; }")
             self.details.hide()
             body.addWidget(self.details)
         row = QHBoxLayout()

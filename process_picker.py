@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, QCheckBox,
                                QTableWidgetItem)
 from qt_pages import table
-from qt_theme import label, button
+from qt_theme import label, button, SPACE
 
 
 @dataclass(frozen=True)
@@ -88,8 +88,8 @@ class ProcessPicker(QDialog):
         self.rows = []
         self.filtered = []
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(22, 20, 22, 20)
-        layout.setSpacing(12)
+        layout.setContentsMargins(3 * SPACE, 3 * SPACE, 3 * SPACE, 3 * SPACE)
+        layout.setSpacing(SPACE * 2)
         layout.addWidget(label("Vyber proces pro měření FPS", "section"))
         layout.addWidget(label("Spusť hru a vyhledej její název, okno nebo PID.", "muted"))
         row = QHBoxLayout()
@@ -142,6 +142,8 @@ class ProcessPicker(QDialog):
                 for j, value in enumerate((target.name, target.title or "—", str(target.pid))):
                     item = QTableWidgetItem(value)
                     item.setToolTip(value)
+                    if j == 2:
+                        item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                     self.table.setItem(i, j, item)
                 if self.previous == (target.pid, target.created):
                     self.table.selectRow(i)

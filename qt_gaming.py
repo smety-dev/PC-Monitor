@@ -4,7 +4,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QGuiApplication
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QSlider, QCheckBox
 from gaming_metrics import CORNERS, percent, fraction, frequency, available_memory, overlay_position
 from qt_fps import FpsPanel
-from qt_theme import BLUE, GREEN, ORANGE, TEXT, MUTED, GRID, card, label, button
+from qt_theme import BLUE, GREEN, ORANGE, TEXT, MUTED, GRID, PANEL, DANGER, SPACE, card, label, button, make_font, workspace_tabs, workspace_tab
 
 
 class Overlay(QWidget):
@@ -50,12 +50,14 @@ class Overlay(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.setPen(QColor(GRID))
-        p.setBrush(QColor(12, 19, 32, self.alpha))
+        background = QColor(PANEL)
+        background.setAlpha(self.alpha)
+        p.setBrush(background)
         p.drawRoundedRect(QRectF(1, 1, self.width()-2, self.height()-2), 12, 12)
-        p.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
+        p.setFont(make_font(13, QFont.Weight.DemiBold))
         p.setPen(QColor(MUTED))
         p.drawText(QRectF(15, 9, 180, 19), Qt.AlignmentFlag.AlignVCenter, "PC MONITOR  /  LIVE")
-        p.setPen(QColor("#ff788c" if self.recording else GREEN))
+        p.setPen(QColor(DANGER if self.recording else GREEN))
         p.drawText(QRectF(197, 9, 98, 19), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
                    "● REC" if self.recording else "● LIVE")
         for i, (name, color, value) in enumerate(zip(("CPU", "GPU 3D", "RAM"), (BLUE, GREEN, ORANGE), self.values)):
@@ -76,11 +78,11 @@ class Overlay(QWidget):
             y = 166 if self.detailed else 140
             p.setPen(QColor(GRID))
             p.drawLine(15, y-3, 295, y-3)
-            p.setFont(QFont("Segoe UI", 16, QFont.Weight.DemiBold))
+            p.setFont(make_font(22, QFont.Weight.DemiBold))
             p.setPen(QColor(GREEN))
             p.drawText(QRectF(15, y+3, 125, 25), Qt.AlignmentFlag.AlignVCenter,
                        f"{stats.fps:.0f} FPS" if stats else "— FPS")
-            p.setFont(QFont("Segoe UI", 9))
+            p.setFont(make_font(12))
             p.setPen(QColor(MUTED))
             low = f"{stats.low:.0f}" if stats and stats.low is not None else "—"
             ms = f"{stats.frametime:.1f}" if stats else "—"
@@ -88,7 +90,7 @@ class Overlay(QWidget):
                        f"1% low  {low} FPS   ·   {ms} ms")
         if self.detailed:
             p.setPen(QColor(MUTED))
-            p.setFont(QFont("Segoe UI", 8))
+            p.setFont(make_font(11))
             p.drawText(QRectF(15, 136, 280, 19), Qt.AlignmentFlag.AlignVCenter,
                        frequency(self.freq) + "   ·   " + available_memory(self.memory))
 
@@ -104,11 +106,17 @@ class GamingPage(QWidget):
         self.enabled = False
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(14)
+        layout.setSpacing(0)
+        self.tabs = workspace_tabs(layout)
+        fps_layout = workspace_tab(self.tabs, "Měření FPS")
+        self.fps = FpsPanel()
+        fps_layout.addWidget(self.fps)
+        fps_layout.addStretch()
+        layout = workspace_tab(self.tabs, "Herní overlay")
 
         panel, body = card()
         header = QHBoxLayout()
-        header.addWidget(label("Gaming Mode", "section"))
+        header.addWidget(label("Zobrazení výkonu ve hře", "section"))
         header.addStretch()
         self.status = label("VYPNUTO", "muted")
         header.addWidget(self.status)
@@ -117,7 +125,7 @@ class GamingPage(QWidget):
         description.setWordWrap(True)
         body.addWidget(description)
         controls = QHBoxLayout()
-        self.toggle = button("Zapnout Gaming Mode", True)
+        self.toggle = button("Zapnout overlay", True)
         self.toggle.clicked.connect(self.toggle_mode)
         controls.addWidget(self.toggle)
         self.minimize = button("Minimalizovat aplikaci")
@@ -167,8 +175,6 @@ class GamingPage(QWidget):
         hint.setWordWrap(True)
         body.addWidget(hint)
         layout.addWidget(panel)
-        self.fps = FpsPanel()
-        layout.addWidget(self.fps)
         layout.addStretch()
 
         self.screen.currentIndexChanged.connect(self.apply_settings)
@@ -250,7 +256,7 @@ class GamingPage(QWidget):
             self.prefs.set("gaming/low_overhead", self.low_overhead.isChecked())
             self.prefs.sync()
         self.monitor.set_gaming(self.enabled and self.low_overhead.isChecked())
-        self.toggle.setText("Vypnout Gaming Mode" if self.enabled else "Zapnout Gaming Mode")
+        self.toggle.setText("Vypnout overlay" if self.enabled else "Zapnout overlay")
         self.status.setText("AKTIVNÍ" if self.enabled else "VYPNUTO")
         self.status.setStyleSheet("color: " + (GREEN if self.enabled else MUTED))
         if self.enabled:
@@ -261,8 +267,10 @@ class GamingPage(QWidget):
 
     def refresh(self, basic, gpu, advanced, recording, window_visible=True):
         visible = window_visible and self.isVisible()
-        stats = self.fps.refresh(visible, visible or (self.enabled and self.fps_visible.isChecked()))
-        if visible:
+        fps_visible = visible and self.tabs.currentIndex() == 0
+        preview_visible = visible and self.tabs.currentIndex() == 1
+        stats = self.fps.refresh(fps_visible, fps_visible or ((self.enabled or preview_visible) and self.fps_visible.isChecked()))
+        if preview_visible:
             self.preview.set_metrics(basic, gpu, advanced, recording, stats)
         if self.enabled:
             self.position_overlay()

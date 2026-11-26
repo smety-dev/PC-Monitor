@@ -1,39 +1,58 @@
 """Qt workspaces for process monitoring, recording and analysis."""
 from datetime import datetime
+from bisect import bisect_left
+import math
 from threading import Event
 from diagnostics import LOG
 from qt_dialogs import ErrorDialog
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from PySide6.QtCore import Qt, QTimer, QPointF
-from PySide6.QtGui import QWheelEvent
+from PySide6.QtGui import QWheelEvent, QCursor
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QComboBox,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QFileDialog,
-    QAbstractScrollArea, QApplication)
+    QAbstractScrollArea, QApplication, QToolTip)
+from matplotlib import rcParams, font_manager
 from matplotlib.figure import Figure
+from matplotlib.ticker import MaxNLocator, FuncFormatter, FixedLocator
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-from qt_theme import card, label, button, PANEL, TEXT, MUTED, BLUE, GREEN, ORANGE, GRID
+from qt_theme import card, label, button, PANEL, TEXT, MUTED, BLUE, GREEN, ORANGE, GRID, SPACE
 from process_metrics import filter_sort
 from performance_logger import PerformanceRecorder
 from performance_analysis import read_recording, summarize, utilization_hints
+
+
+def configure_chart_fonts(family):
+    # Matplotlib resolves font files separately from Qt; use an installed family.
+    available = {entry.name for entry in font_manager.fontManager.ttflist}
+    candidates = (family, "Segoe UI", "Inter", "Noto Sans", "DejaVu Sans")
+    rcParams["font.family"] = list(dict.fromkeys(name for name in candidates if name in available)) or ["DejaVu Sans"]
+    rcParams["font.size"] = 10
 
 
 def table(headers):
     t = QTableWidget(0, len(headers))
     t.setHorizontalHeaderLabels(headers)
     t.verticalHeader().hide()
-    t.verticalHeader().setDefaultSectionSize(34)
+    t.verticalHeader().setDefaultSectionSize(36)
     t.setAlternatingRowColors(True)
     t.setShowGrid(False)
     t.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
     t.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
     t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+    t.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+    t.setWordWrap(False)
+    t.setTextElideMode(Qt.TextElideMode.ElideRight)
     return t
 
 
 def populate(t, rows):
     t.setUpdatesEnabled(False)
     try:
+        for j in range(1, t.columnCount()):
+            header = t.horizontalHeaderItem(j)
+            if header is not None:
+                header.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         t.setRowCount(len(rows))
         for i, row in enumerate(rows):
             for j, value in enumerate(row):
@@ -43,6 +62,7 @@ def populate(t, rows):
                     t.setItem(i, j, item)
                 if item.text() != str(value):
                     item.setText(str(value))
+                    item.setToolTip(str(value))
                 if j:
                     item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
     finally:
@@ -50,7 +70,7 @@ def populate(t, rows):
 
 
 def fmt(value, decimals=1):
-    return "N/A" if value is None else f"{value:.{decimals}f}"
+    return "—" if value is None else f"{value:.{decimals}f}".replace(".", ",")
 
 
 class Plot(FigureCanvasQTAgg):
@@ -63,7 +83,56 @@ class Plot(FigureCanvasQTAgg):
         self._layout_key = None
         self._data_key = None
         self._artists = []
+        self._hover_data = ((), (), False, "", None)
+        self._hover_text = None
+        self.mpl_connect("motion_notify_event", self.hover)
+        self.mpl_connect("figure_leave_event", self.hide_hover)
         self.render([], [], True)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if not hasattr(self, "ax"):
+            return
+        width, height = max(1, self.width()), max(1, self.height())
+        # Fixed logical-pixel gutters remain symmetric at different window sizes.
+        gutter = min(.20, 54 / width)
+        self.figure.subplots_adjust(left=gutter, right=1-gutter,
+                                    top=1-min(.25, 30/height),
+                                    bottom=min(.30, 38/height))
+        self.draw_idle()
+
+    def hide_hover(self, *_):
+        if self._hover_text is not None:
+            QToolTip.hideText()
+            self._hover_text = None
+
+    def hover(self, event):
+        x, lines, percentage, unit, rolling = self._hover_data
+        if event.inaxes is not self.ax or event.xdata is None or not x:
+            self.hide_hover()
+            return
+        i = bisect_left(x, event.xdata)
+        if i >= len(x):
+            i = len(x)-1
+        elif i and abs(x[i-1]-event.xdata) <= abs(x[i]-event.xdata):
+            i -= 1
+        # In the rolling view, don't snap the empty area to a distant sample.
+        if rolling and abs(x[i]-event.xdata) > 2:
+            self.hide_hover()
+            return
+        suffix = "%" if percentage else unit
+        heading = ("Nejnovější vzorek" if abs(x[i]) < .05 else f"{abs(x[i]):.1f} s zpět") if rolling else f"{x[i]:.2f}".rstrip("0").rstrip(".")
+        texts = [heading.replace(".", ",")]
+        for name, _, values in lines:
+            value = values[i]
+            if value is not None and math.isfinite(value):
+                texts.append(f"{name}: {fmt(value, 1)}" + (" " + suffix if suffix else ""))
+            else:
+                texts.append(f"{name}: —")
+        tooltip = "\n".join(texts)
+        if tooltip != self._hover_text or not QToolTip.isVisible():
+            QToolTip.showText(QCursor.pos(), tooltip, self)
+            self._hover_text = tooltip
 
     def wheelEvent(self, event):
         # Matplotlib normally consumes the wheel for graph interactions.
@@ -83,28 +152,40 @@ class Plot(FigureCanvasQTAgg):
         QApplication.sendEvent(viewport, forwarded)
         event.accept()
 
-    def render(self, x, lines, percentage=False, xlabel="Uplynulý čas (s)"):
+    def render(self, x, lines, percentage=False, xlabel="Uplynulý čas (s)",
+               *, unit="", rolling_seconds=None):
         # Retain axes and line artists across ordinary updates.
         x = tuple(x)
         lines = [(name, color, tuple(values)) for name, color, values in lines]
-        layout_key = (percentage, xlabel, tuple((name, color) for name, color, _ in lines))
+        layout_key = (percentage, xlabel, unit, rolling_seconds, tuple((name, color) for name, color, _ in lines))
         data_key = (x, tuple(values for _, _, values in lines))
         if layout_key == self._layout_key and data_key == self._data_key:
             return
+        self._hover_data = (x, lines, percentage, unit, rolling_seconds)
         a = self.ax
         if layout_key != self._layout_key:
             a.clear()
             a.set_facecolor(PANEL)
-            a.tick_params(colors=MUTED, length=0, pad=6)
-            a.grid(axis="y", color=GRID, alpha=.7)
+            a.tick_params(colors=MUTED, labelsize=10, length=0, pad=6)
+            a.set_axisbelow(True)
+            a.grid(axis="y", color=GRID, alpha=.8, linewidth=.8)
+            a.xaxis.set_major_locator(MaxNLocator(nbins=5))
+            a.yaxis.set_major_locator(MaxNLocator(nbins=4))
+            a.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}".replace(".", ",") + ("%" if percentage else "")))
+            a.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}".replace(".", ",")))
+            if percentage:
+                a.yaxis.set_major_locator(FixedLocator([0, 25, 50, 75, 100]))
+            if rolling_seconds:
+                a.xaxis.set_major_locator(FixedLocator([-rolling_seconds, -.75*rolling_seconds, -.5*rolling_seconds, -.25*rolling_seconds, 0]))
+                a.xaxis.set_major_formatter(FuncFormatter(lambda v, _: "Teď" if abs(v) < .01 else f"−{abs(v):g} s"))
             for spine in a.spines.values():
                 spine.set_visible(False)
-            a.set_xlabel(xlabel, color=MUTED)
-            self._artists = [a.plot([], [], color=color, label=name, linewidth=1.8)[0]
+            a.set_xlabel(xlabel, color=MUTED, fontsize=9, labelpad=6)
+            self._artists = [a.plot([], [], color=color, label=name, linewidth=2.0, solid_capstyle="round", solid_joinstyle="round")[0]
                              for name, color, _ in lines]
             if lines:
                 a.legend(frameon=False, labelcolor=TEXT, loc="lower center",
-                         bbox_to_anchor=(.5, 1.01), ncol=min(3, len(lines)), borderaxespad=0)
+                         bbox_to_anchor=(.5, 1.01), ncol=min(3, len(lines)), borderaxespad=0, fontsize=9)
             else:
                 a.set_xticks([])
                 a.set_yticks([])
@@ -113,13 +194,21 @@ class Plot(FigureCanvasQTAgg):
                        ha="center", va="center", color=MUTED, fontsize=12)
         for artist, (_, _, values) in zip(self._artists, lines):
             artist.set_data(x, [float("nan") if value is None else value for value in values])
-            artist.set_marker("." if len(x) == 1 else "None")
+            if rolling_seconds and values and values[-1] is not None and math.isfinite(values[-1]):
+                artist.set_marker("o")
+                artist.set_markersize(4)
+                artist.set_markevery([len(x)-1])
+            else:
+                artist.set_marker("." if len(x) == 1 else "None")
+                artist.set_markevery(None)
         if lines:
             a.set_autoscalex_on(True)
             a.set_autoscaley_on(not percentage)
             a.relim()
             a.autoscale_view()
-            if x:
+            if rolling_seconds:
+                a.set_xlim(-rolling_seconds, 0)
+            elif x:
                 first, last = min(x), max(x)
                 padding = (last - first) * .02 if first != last else .5
                 a.set_xlim(first - padding, last + padding)
@@ -135,9 +224,11 @@ class Processes(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0,0,0,0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2 * SPACE)
         self.search = QLineEdit()
-        self.search.setPlaceholderText("Vyhledat proces nebo PID")
+        self.search.setPlaceholderText("Hledat podle názvu nebo PID…")
+        self.search.setClearButtonEnabled(True)
         layout.addWidget(self.search)
         self.status = label("Čekám na data", "muted")
         layout.addWidget(self.status)
@@ -147,7 +238,9 @@ class Processes(QWidget):
             self.t.horizontalHeader().setSectionResizeMode(i,QHeaderView.ResizeMode.Fixed)
             self.t.setColumnWidth(i,110)
         layout.addWidget(self.t)
-        layout.addWidget(label("CPU = podíl celkové kapacity • RAM = RSS • N/A = nedostupné", "muted"))
+        hint = label("Kliknutím na hlavičku seřadíš procesy. CPU je podíl celkového výkonu; RAM je rezidentní paměť (RSS). — znamená nedostupná data.", "muted")
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
         self.rows = None
         self.key = "cpu"
         self.desc = True
@@ -179,12 +272,16 @@ class Recording(QWidget):
         super().__init__()
         self.recorder = PerformanceRecorder()
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0,0,0,0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2 * SPACE)
         panel, body = card()
         layout.addWidget(panel)
         body.addWidget(label("Záznam výkonu do CSV", "section"))
-        self.status = label("Připraveno", "muted")
+        self.status = label("Připraveno k záznamu", "status")
         body.addWidget(self.status)
+        hint = label("Zvol interval, spusť měření a vyber, kam uložit soubor CSV.", "muted")
+        hint.setWordWrap(True)
+        body.addWidget(hint)
         self.stats = label("0 vzorků  ·  0 s", "value")
         body.addWidget(self.stats)
         controls = QHBoxLayout()
@@ -220,6 +317,7 @@ class Recording(QWidget):
         self.stop_button.setEnabled(active)
         self.interval.setEnabled(not active)
         self.stats.setText(f"{self.recorder.count} vzorků  ·  {self.recorder.elapsed:.0f} s")
+        self.status.setStyleSheet("color: " + (GREEN if active else MUTED))
 
     def start(self):
         path,_ = QFileDialog.getSaveFileName(self,"Uložit záznam",datetime.now().strftime("pc-monitor-%Y%m%d-%H%M%S.csv"),"CSV (*.csv)")
@@ -277,7 +375,8 @@ class Analysis(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0,0,0,0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2 * SPACE)
         self.rows = []
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.cancel = Event()
@@ -294,7 +393,7 @@ class Analysis(QWidget):
         self.group.currentTextChanged.connect(self.draw)
         bar.addWidget(self.group)
         layout.addLayout(bar)
-        self.info = label("Vyber záznam PC Monitoru", "muted")
+        self.info = label("Začni výběrem uloženého hardwarového CSV ze sekce Záznam.", "muted")
         self.info.setWordWrap(True)
         layout.addWidget(self.info)
         kpis = QHBoxLayout()
@@ -314,7 +413,7 @@ class Analysis(QWidget):
         body.addWidget(self.plot)
         layout.addWidget(panel,1)
         self.t = table(["Metrika","Minimum","Průměr","Maximum","Vzorky"])
-        self.t.setMinimumHeight(210)
+        self.t.setMinimumHeight(330)
         layout.addWidget(self.t)
         self.hints = label("", "muted")
         self.hints.setWordWrap(True)

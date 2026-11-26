@@ -1,6 +1,6 @@
 """Settings workspace using the shared PC Monitor design system."""
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QDialog
-from qt_theme import card, label, button, ORANGE
+from qt_theme import card, label, button, ORANGE, SPACE
 from version import __version__
 
 
@@ -11,7 +11,7 @@ class SettingsPage(QWidget):
         self.reset_callback = reset_callback
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(14)
+        layout.setSpacing(2 * SPACE)
         panel, body = card()
         body.addWidget(label("Spuštění a okno", "section"))
         hint = label("Zvol, jak se má aplikace chovat při příštím spuštění.", "muted")

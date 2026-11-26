@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.9.4 — Early development**
+**Current version: v0.9.5 — Early development**
 
 ## Features
 
@@ -82,7 +82,7 @@ FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second wind
 python presentmon_bundle.py --package
 ```
 
-The script creates `dist/PC-Monitor-v0.9.4-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
+The script creates `dist/PC-Monitor-v0.9.5-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
 
 ## Settings & preferences
 
@@ -114,7 +114,15 @@ python gaming_benchmark.py --demo
 
 Load `pc-monitor-benchmark-demo-A.csv` and `pc-monitor-benchmark-demo-B.csv` into the two slots. These are generated example data, not actual game measurements. Existing files are preserved.
 
+## Visual design
+
+The overview shows utilization, available memory, disk and network throughput, a fixed 60-second rolling history using monotonic timestamps, a CPU/RAM/GPU filter, hover readouts and device details. FPS capture and overlay controls occupy separate tabs; Benchmark separates recording, comparison and graphs, with a progress bar and a concise A/B summary. Existing CSV formats, sampling and permission requirements remain unchanged.
+
+The shared Qt theme defines color, typography and spacing tokens. Navigation icons use one monochrome tint in every state, with selection conveyed by the button background and text. The application prefers an installed Segoe UI Variable font and falls back to other installed sans-serif families; charts use the same family when available to Matplotlib. The sidebar scrolls on smaller windows. Benchmark cards summarize A/B FPS and 1% low, and comparison colors indicate the direction of improvement. No font files, dependencies or capture changes are introduced.
+
 ## Testing
+
+The UI smoke tests use an offscreen Qt window and synthetic metrics with an isolated settings store. They exercise navigation, tab routing, metric rendering and benchmark comparison without starting hardware workers, PresentMon or changing real user preferences. They do not replace manual visual and ETW validation on Windows.
 
 ```powershell
 python -m unittest discover -v
