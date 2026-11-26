@@ -7,14 +7,12 @@ A lightweight Windows application for real-time hardware performance monitoring,
 ## Features
 
 - New Qt desktop interface with custom antialiased gauges, rounded cards, dark navigation and native tables
-
 - Real-time CPU and RAM utilization
 - GPU 3D utilization (Windows performance counters, busiest detected 3D engine)
 - Automatic CPU and GPU name detection in the GUI
 - Live performance charts with up to 60 samples
 - Available and total RAM
 - Physical and logical CPU core detection
-- Modern dark dashboard with circular gauges and dedicated Overview, CPU, Disks and Network pages
 - OS-reported CPU frequency and per-logical-processor utilization
 - Local disk capacity and aggregate disk read/write throughput
 - Aggregate network receive/send throughput
@@ -33,14 +31,14 @@ A lightweight Windows application for real-time hardware performance monitoring,
 
 ```powershell
 python -m pip install -r requirements.txt
-python qt_gui.py
+python main.py
 ```
 
-The legacy terminal monitor is also available with `python main.py`. It does not include the GUI-only features.
+`main.py` is the canonical entry point. It launches the Qt desktop application.
 
 ## Dashboard
 
-The sidebar switches between the overview, CPU, disks, network, process and recording pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The new desktop interface uses PySide6 and matplotlib. The original Tkinter interface remains available via python gui.py. Install updated requirements before launching Qt.
+The sidebar switches between the overview, CPU, disks, network, process, recording and analysis pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The new desktop interface uses PySide6 and matplotlib. The obsolete Tkinter and terminal implementations were removed from this development version.
 
 ## Advanced monitoring
 
@@ -58,9 +56,17 @@ Open Záznam (Recording), select 1, 2, 5 or 10 seconds and choose a new CSV file
 
 Open Analýza and load an original PC Monitor CSV file (Czech or older English headers). The analyzer displays sample counts, last elapsed time, minimum, arithmetic mean and maximum for available values, plus selectable graphs. Invalid elapsed-time rows are skipped; invalid metric cells are unavailable. The graph subsamples very long recordings for responsiveness; statistics use all accepted rows. Files are limited to 500,000 data rows. Utilization hints are heuristic, not a bottleneck diagnosis: FPS, frame times and per-core history are not recorded. No data is uploaded.
 
+## Testing
+
+```powershell
+python -m unittest discover -v
+```
+
+Run the application and exercise all seven pages after installing requirements. The automated tests cover monitoring, CSV logic and version metadata consistency.
+
 ## Versioning
 
-The application version is defined in [`version.py`](version.py) and shared by both entry points. When releasing an update, update that file, the current version in this README, and [`CHANGELOG.md`](CHANGELOG.md). README and changelog updates are manual.
+The application version is defined in [`version.py`](version.py) and displayed by the Qt application. When releasing an update, update that file, the current version in this README, and [`CHANGELOG.md`](CHANGELOG.md). README and changelog updates are manual.
 
 ## Planned features
 
