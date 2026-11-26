@@ -25,6 +25,8 @@ RUNTIME_FILES = (
     "hardware_metrics.py", "process_metrics.py", "performance_logger.py",
     "performance_analysis.py", "version.py", "requirements.txt", "README.md",
     "CHANGELOG.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "app_identity.py",
+    "i18n.py", "locale_en.py", "GUIDE.md", "ROADMAP.md", "RELEASE_NOTES.md",
+    "docs/assets/logo.svg", "docs/assets/dashboard-demo.svg",
 )
 
 
