@@ -5,9 +5,11 @@ from diagnostics import LOG
 from qt_dialogs import ErrorDialog
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, QPointF
+from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QComboBox,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QFileDialog)
+    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QFileDialog,
+    QAbstractScrollArea, QApplication)
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from qt_theme import card, label, button, PANEL, TEXT, MUTED, BLUE, GREEN, ORANGE, GRID
@@ -56,12 +58,30 @@ class Plot(FigureCanvasQTAgg):
         self.figure = Figure(figsize=(7, 3), facecolor=PANEL)
         super().__init__(self.figure)
         self.ax = self.figure.add_subplot(111)
-        self.figure.subplots_adjust(left=.10, right=.97, top=.90, bottom=.18)
+        self.figure.subplots_adjust(left=.085, right=.915, top=.82, bottom=.20)
         self.setMinimumHeight(235)
         self._layout_key = None
         self._data_key = None
         self._artists = []
         self.render([], [], True)
+
+    def wheelEvent(self, event):
+        # Matplotlib normally consumes the wheel for graph interactions.
+        # Our plots are read-only; pass the original scroll deltas to the page.
+        parent = self.parentWidget()
+        while parent is not None and not isinstance(parent, QAbstractScrollArea):
+            parent = parent.parentWidget()
+        if parent is None:
+            event.ignore()
+            return
+        viewport = parent.viewport()
+        forwarded = QWheelEvent(
+            QPointF(viewport.mapFromGlobal(event.globalPosition().toPoint())),
+            event.globalPosition(), event.pixelDelta(), event.angleDelta(),
+            event.buttons(), event.modifiers(), event.phase(), event.inverted(),
+            event.source(), event.pointingDevice())
+        QApplication.sendEvent(viewport, forwarded)
+        event.accept()
 
     def render(self, x, lines, percentage=False, xlabel="Uplynulý čas (s)"):
         # Retain axes and line artists across ordinary updates.
@@ -83,7 +103,8 @@ class Plot(FigureCanvasQTAgg):
             self._artists = [a.plot([], [], color=color, label=name, linewidth=1.8)[0]
                              for name, color, _ in lines]
             if lines:
-                a.legend(frameon=False, labelcolor=TEXT, loc="upper left", ncol=min(3, len(lines)))
+                a.legend(frameon=False, labelcolor=TEXT, loc="lower center",
+                         bbox_to_anchor=(.5, 1.01), ncol=min(3, len(lines)), borderaxespad=0)
             else:
                 a.set_xticks([])
                 a.set_yticks([])
@@ -98,6 +119,10 @@ class Plot(FigureCanvasQTAgg):
             a.set_autoscaley_on(not percentage)
             a.relim()
             a.autoscale_view()
+            if x:
+                first, last = min(x), max(x)
+                padding = (last - first) * .02 if first != last else .5
+                a.set_xlim(first - padding, last + padding)
             if percentage:
                 a.set_ylim(0, 100)
             else:
