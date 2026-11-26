@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.9.1 — Early development**
+**Current version: v0.9.2 — Early development**
 
 ## Features
 
@@ -21,6 +21,7 @@ A lightweight Windows application for real-time hardware performance monitoring,
 - Offline performance analysis with charts and sample statistics
 - Configurable gaming overlay and optional process-sampling suspension
 - Optional PresentMon-based live FPS, frametimes and rolling 1% low
+- Persistent local preferences and themed settings workspace
 
 ## Requirements
 
@@ -41,7 +42,7 @@ python main.py
 
 ## Dashboard
 
-The sidebar switches between the overview, CPU, disks, network, process, recording, analysis and gaming pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The new desktop interface uses PySide6 and matplotlib. 
+The sidebar switches between the overview, CPU, disks, network, process, recording, analysis, gaming and settings pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The new desktop interface uses PySide6 and matplotlib. 
 
 ## Advanced monitoring
 
@@ -61,7 +62,7 @@ Open Analýza and load an original PC Monitor CSV file (Czech or older English h
 
 ## Gaming Mode & Overlay
 
-Open Gaming and enable Gaming Mode. Choose a connected monitor, corner, background opacity and optional CPU frequency/available RAM details. The click-through, non-activating overlay is a separate always-on-top desktop window, with live CPU, GPU 3D, RAM and recording status. It does not inject into games or alter their files. Use windowed or borderless fullscreen mode; exclusive fullscreen and some game/compositor or anti-cheat configurations may hide or disallow desktop overlays. Disable Gaming Mode from the main window (Alt+Tab if necessary); closing the application closes the overlay. Optionally suspend process sampling during play; this resumes on exit from Gaming Mode. The usual hardware sampling and CSV recording continue. Frame metrics are available through the optional PresentMon capture below; temperatures are not measured and performance improvements are not guaranteed. Gaming Mode itself does not require administrator rights. Overlay settings are session-only.
+Open Gaming and enable Gaming Mode. Choose a connected monitor, corner, background opacity and optional CPU frequency/available RAM details. The click-through, non-activating overlay is a separate always-on-top desktop window, with live CPU, GPU 3D, RAM and recording status. It does not inject into games or alter their files. Use windowed or borderless fullscreen mode; exclusive fullscreen and some game/compositor or anti-cheat configurations may hide or disallow desktop overlays. Disable Gaming Mode from the main window (Alt+Tab if necessary); closing the application closes the overlay. Optionally suspend process sampling during play; this resumes on exit from Gaming Mode. The usual hardware sampling and CSV recording continue. Frame metrics are available through the optional PresentMon capture below; temperatures are not measured and performance improvements are not guaranteed. Gaming Mode itself does not require administrator rights. Overlay preferences are restored between launches; active Gaming Mode and capture sessions are not restored.
 
 ## FPS & frametime capture (optional)
 
@@ -79,7 +80,13 @@ FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second wind
 python presentmon_bundle.py --package
 ```
 
-The script creates `dist/PC-Monitor-v0.9.1-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
+The script creates `dist/PC-Monitor-v0.9.2-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
+
+## Settings & preferences
+
+Open Nastavení to choose whether to restore the last selected page and the main window geometry. Gaming overlay monitor, corner, opacity, hardware details, FPS visibility, process sampling preference and CSV recording interval are saved automatically as they change. Window geometry is saved on normal application exit. Qt restores saved geometry on available screens; unavailable overlay monitors fall back to the primary screen. The preferred monitor can be restored when it is connected again.
+
+Preferences are stored locally per Windows user using Qt QSettings (native Windows registry under HKEY_CURRENT_USER\\Software\\smety-dev\\PC Monitor). No new dependencies, network sync or administrator permissions are required. Reset requires confirmation, restores default preferences and geometry, and is unavailable while recording hardware CSV. It does not delete CSV files, PresentMon files or other registry keys. Active Gaming Mode, game process IDs, frame capture and CSV recording sessions are never automatically started on launch.
 
 ## Testing
 
@@ -87,7 +94,7 @@ The script creates `dist/PC-Monitor-v0.9.1-source-windows-x64.zip` with applicat
 python -m unittest discover -v
 ```
 
-Run the application and exercise all eight pages after installing requirements. The automated tests cover monitoring, CSV logic, overlay helpers, frame metric calculations, PresentMon bundle verification and error handling, and version metadata consistency.
+Run the application and exercise all nine pages after installing requirements. The automated tests cover monitoring, CSV logic, overlay helpers, frame metric calculations, PresentMon bundle verification and error handling, preferences, and version metadata consistency.
 
 ## Versioning
 

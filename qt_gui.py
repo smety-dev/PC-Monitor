@@ -2,7 +2,7 @@
 import sys
 from collections import deque
 import psutil
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, QByteArray, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QVBoxLayout,
     QHBoxLayout, QGridLayout, QStackedWidget, QButtonGroup, QScrollArea, QProgressBar,
@@ -10,6 +10,8 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QVBox
 from qt_theme import STYLE, BLUE, GREEN, ORANGE, MetricCard, card, label, button
 from qt_monitor import Monitor
 from qt_gaming import GamingPage
+from qt_settings import SettingsPage
+from preferences import Preferences
 from qt_pages import Processes, Recording, Analysis, Plot, fmt
 from version import __version__
 
@@ -39,6 +41,7 @@ class Window(QMainWindow):
         self.setWindowTitle(f"PC Monitor — {__version__}")
         self.resize(1250,820)
         self.setMinimumSize(900,650)
+        self.prefs = Preferences()
         self.monitor = Monitor()
         self.history = deque(maxlen=60)
         root = QWidget()
@@ -72,7 +75,11 @@ class Window(QMainWindow):
         self.processes = Processes()
         self.recording = Recording()
         self.analysis = Analysis()
-        self.gaming = GamingPage(self.monitor, self)
+        self.gaming = GamingPage(self.monitor, self, self.prefs)
+        self.settings_page = SettingsPage(self.prefs, self.reset_preferences,
+                                          lambda: self.navigate(7), lambda: self.navigate(5))
+        self.recording.interval.setCurrentText(str(self.prefs.get("recording/interval")))
+        self.recording.interval.currentTextChanged.connect(self.save_recording_interval)
         self.views = [
             ("Přehled","Přehled systému",self.overview(),QStyle.StandardPixmap.SP_ComputerIcon),
             ("Procesor","Procesor",self.cpu_page(),QStyle.StandardPixmap.SP_DriveHDIcon),
@@ -82,6 +89,7 @@ class Window(QMainWindow):
             ("Záznam","Záznam výkonu",self.recording,QStyle.StandardPixmap.SP_DialogSaveButton),
             ("Analýza","Analýza výkonu",scroll(self.analysis),QStyle.StandardPixmap.SP_FileDialogContentsView),
             ("Gaming","Gaming Mode & Overlay",scroll(self.gaming),QStyle.StandardPixmap.SP_MediaPlay),
+            ("Nastavení","Nastavení aplikace",scroll(self.settings_page),QStyle.StandardPixmap.SP_FileDialogDetailedView),
         ]
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
@@ -102,8 +110,10 @@ class Window(QMainWindow):
         self.live.setStyleSheet("color: "+GREEN)
         nav.addWidget(self.live)
         nav.addWidget(label("VERSION "+__version__,"muted"))
-        self.group.button(0).setChecked(True)
-        self.navigate(0)
+        last = self.prefs.get("startup/last_page") if self.prefs.get("startup/remember_page") else "Přehled"
+        index = next((i for i, view in enumerate(self.views) if view[0] == last), 0)
+        self.navigate(index)
+        self.restore_window_preferences()
         self.monitor.start()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh)
@@ -172,8 +182,40 @@ class Window(QMainWindow):
         layout.addStretch()
         return widget
 
+    def save_recording_interval(self, value):
+        self.prefs.set("recording/interval", value)
+        self.prefs.sync()
+
+    def restore_window_preferences(self):
+        if self.prefs.get("startup/remember_geometry"):
+            geometry = self.prefs.geometry()
+            if isinstance(geometry, QByteArray) and self.restoreGeometry(geometry):
+                return
+        self.default_geometry()
+
+    def default_geometry(self):
+        self.setWindowState(Qt.WindowState.WindowNoState)
+        self.resize(1250, 820)
+        screen = QApplication.primaryScreen()
+        if screen:
+            area = screen.availableGeometry()
+            self.resize(min(1250, area.width()), min(820, area.height()))
+            self.move(area.center() - self.rect().center())
+
+    def reset_preferences(self):
+        if self.recording.recorder.active:
+            return False
+        self.prefs.reset()
+        self.gaming.load_preferences()
+        self.recording.interval.setCurrentText(str(self.prefs.get("recording/interval")))
+        self.default_geometry()
+        return True
+
     def navigate(self,index):
+        self.group.button(index).setChecked(True)
         self.stack.setCurrentIndex(index)
+        self.prefs.set("startup/last_page", self.views[index][0])
+        self.prefs.sync()
         self.title.setText(self.views[index][1])
         if hasattr(self,"timer"):
             self.render_page()
@@ -259,6 +301,11 @@ class Window(QMainWindow):
                 self.processes.refresh(self.monitor.processes)
 
     def closeEvent(self,event):
+        if self.prefs.get("startup/remember_geometry"):
+            self.prefs.save_geometry(self.saveGeometry())
+        else:
+            self.prefs.remove_geometry()
+        self.prefs.sync()
         self.timer.stop()
         self.gaming.shutdown()
         self.monitor.close()

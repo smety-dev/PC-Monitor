@@ -94,9 +94,11 @@ class Overlay(QWidget):
 
 
 class GamingPage(QWidget):
-    def __init__(self, monitor, parent_window):
+    def __init__(self, monitor, parent_window, prefs):
         super().__init__()
         self.monitor = monitor
+        self.prefs = prefs
+        self.loading_preferences = True
         self.overlay = Overlay()
         self.preview = Overlay(preview=True)
         self.enabled = False
@@ -178,9 +180,28 @@ class GamingPage(QWidget):
         app.screenAdded.connect(self.refresh_screens)
         app.screenRemoved.connect(self.refresh_screens)
         self.refresh_screens()
+        self.load_preferences()
+        self.screen.currentIndexChanged.connect(self.save_monitor)
+
+    def load_preferences(self):
+        self.loading_preferences = True
+        self.corner.setCurrentText(self.prefs.get("overlay/corner"))
+        self.opacity.setValue(self.prefs.get("overlay/opacity"))
+        self.details.setChecked(self.prefs.get("overlay/details"))
+        self.fps_visible.setChecked(self.prefs.get("overlay/fps"))
+        self.low_overhead.setChecked(self.prefs.get("gaming/low_overhead"))
+        self.refresh_screens()
+        self.loading_preferences = False
+        self.apply_settings()
+        self.apply_mode()
+
+    def save_monitor(self, *_):
+        if not self.loading_preferences:
+            self.prefs.set("overlay/monitor", self.screen.currentData() or "")
+            self.prefs.sync()
 
     def refresh_screens(self, *_):
-        previous = self.screen.currentData()
+        previous = self.prefs.get("overlay/monitor")
         self.screen.blockSignals(True)
         self.screen.clear()
         for screen in QGuiApplication.screens():
@@ -212,12 +233,21 @@ class GamingPage(QWidget):
         for overlay in (self.overlay, self.preview):
             overlay.configure(value, self.details.isChecked(), self.fps_visible.isChecked())
         self.position_overlay()
+        if not self.loading_preferences:
+            self.prefs.set("overlay/corner", self.corner.currentText())
+            self.prefs.set("overlay/opacity", value)
+            self.prefs.set("overlay/details", self.details.isChecked())
+            self.prefs.set("overlay/fps", self.fps_visible.isChecked())
+            self.prefs.sync()
 
     def toggle_mode(self):
         self.enabled = not self.enabled
         self.apply_mode()
 
     def apply_mode(self, *_):
+        if not self.loading_preferences:
+            self.prefs.set("gaming/low_overhead", self.low_overhead.isChecked())
+            self.prefs.sync()
         self.monitor.set_gaming(self.enabled and self.low_overhead.isChecked())
         self.toggle.setText("Vypnout Gaming Mode" if self.enabled else "Zapnout Gaming Mode")
         self.status.setText("AKTIVNÍ" if self.enabled else "VYPNUTO")
