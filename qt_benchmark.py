@@ -5,13 +5,13 @@ from pathlib import Path
 from threading import Event
 
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QFileDialog, QHeaderView
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QFileDialog, QHeaderView, QProgressBar
 from PySide6.QtGui import QColor, QBrush
 from diagnostics import LOG
 from gaming_benchmark import DURATIONS, analyze_benchmark, relative_change
 from qt_dialogs import ErrorDialog
 from qt_pages import Plot, table, populate
-from qt_theme import card, label, button, BLUE, GREEN, ORANGE, DANGER, TEXT, SPACE
+from qt_theme import card, label, button, BLUE, GREEN, ORANGE, DANGER, TEXT, MUTED, SPACE, workspace_tabs, workspace_tab
 
 
 def formatted(value, suffix="", digits=2):
@@ -34,21 +34,28 @@ class BenchmarkPage(QWidget):
         self.timer.timeout.connect(self.poll)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(2 * SPACE)
+        layout.setSpacing(0)
+        self.tabs = workspace_tabs(layout)
+        layout = workspace_tab(self.tabs, "Měření")
+        results_layout = workspace_tab(self.tabs, "Výsledky A/B")
+        charts_layout = workspace_tab(self.tabs, "Grafy")
         panel, body = card()
-        body.addWidget(label("Herní benchmark", "section"))
+        body.addWidget(label("1 · Připrav měření FPS", "section"))
         hint = label("Nejprve vyber hru a spusť FPS měření v Gaming. Potom zaznamenej stejnou herní scénu před a po změně nastavení.", "muted")
         hint.setWordWrap(True)
         body.addWidget(hint)
         row = QHBoxLayout()
         self.capture_status = label("FPS měření není spuštěno", "muted")
         row.addWidget(self.capture_status, 1)
-        go = button("Přejít na Gaming")
+        go = button("Otevřít měření FPS")
         go.clicked.connect(open_gaming)
         row.addWidget(go)
         body.addLayout(row)
+        layout.addWidget(panel)
+        panel, body = card()
+        body.addWidget(label("2 · Zaznamenej herní scénu", "section"))
         row = QHBoxLayout()
-        row.addWidget(label("Délka"))
+        row.addWidget(label("Délka měření"))
         self.duration = QComboBox()
         for seconds in DURATIONS:
             self.duration.addItem(f"{seconds} s", seconds)
@@ -65,11 +72,20 @@ class BenchmarkPage(QWidget):
         self.status = label("Připraveno", "muted")
         self.status.setWordWrap(True)
         body.addWidget(self.status)
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 100)
+        self.progress.setTextVisible(False)
+        body.addWidget(self.progress)
         self.last_file = label("Žádný dokončený záznam", "muted")
         self.last_file.setWordWrap(True)
         body.addWidget(self.last_file)
         layout.addWidget(panel)
+        results = button("Otevřít výsledky A/B")
+        results.clicked.connect(lambda: self.tabs.setCurrentIndex(1))
+        body.addWidget(results)
+        layout.addStretch()
         capture.benchmark_done.connect(self.finished)
+        layout = results_layout
 
         panel, body = card()
         body.addWidget(label("Porovnání měření A / B", "section"))
@@ -79,53 +95,67 @@ class BenchmarkPage(QWidget):
         self.file_labels = []
         self.load_buttons = []
         self.last_buttons = []
-        for i, title in enumerate(("A – základ", "B – porovnání")):
-            row = QHBoxLayout()
-            name = label(title, "muted")
-            name.setWordWrap(True)
-            row.addWidget(name, 1)
-            self.file_labels.append(name)
-            choose = button("Načíst CSV")
-            choose.clicked.connect(lambda checked=False, slot=i: self.choose(slot))
-            last = button("Poslední záznam")
-            last.clicked.connect(lambda checked=False, slot=i: self.load(slot, self.last_path))
-            row.addWidget(choose)
-            row.addWidget(last)
-            self.load_buttons.append(choose)
-            self.last_buttons.append(last)
-            body.addLayout(row)
-        self.analysis_status = label("Načti jedno nebo dvě měření.", "muted")
-        self.analysis_status.setWordWrap(True)
-        body.addWidget(self.analysis_status)
         self.summary_values = []
         summary = QHBoxLayout()
-        for title, color in (("A · ZÁKLAD", BLUE), ("B · POROVNÁNÍ", GREEN)):
+        summary.setSpacing(SPACE)
+        for i, (title, color) in enumerate((("A · VÝCHOZÍ", BLUE), ("B · NOVÉ MĚŘENÍ", GREEN))):
             tile, tile_body = card()
             tile_body.addWidget(label(title, "metric"))
-            value = label("— FPS", "value")
+            name = label("Žádný soubor", "muted")
+            name.setWordWrap(True)
+            tile_body.addWidget(name)
+            self.file_labels.append(name)
+            value = label("— FPS", "stat")
             value.setStyleSheet("color: " + color)
             tile_body.addWidget(value)
             detail = label("1% Low: —", "muted")
             tile_body.addWidget(detail)
             self.summary_values.append((value, detail))
+            choose = button("Načíst CSV", True)
+            choose.clicked.connect(lambda checked=False, slot=i: self.choose(slot))
+            last = button("Použít poslední záznam")
+            last.clicked.connect(lambda checked=False, slot=i: self.load(slot, self.last_path))
+            tile_body.addWidget(choose)
+            tile_body.addWidget(last)
+            self.load_buttons.append(choose)
+            self.last_buttons.append(last)
             summary.addWidget(tile, 1)
         body.addLayout(summary)
+        self.analysis_status = label("Načti výchozí měření A a potom nové měření B.", "muted")
+        self.analysis_status.setWordWrap(True)
+        body.addWidget(self.analysis_status)
+        self.comparison_summary = label("", "section")
+        self.comparison_summary.setWordWrap(True)
+        body.addWidget(self.comparison_summary)
+        graph_button = button("Zobrazit grafy")
+        graph_button.clicked.connect(lambda: self.tabs.setCurrentIndex(2))
+        body.addWidget(graph_button)
+        layout.addWidget(panel)
+        panel, body = card()
+        body.addWidget(label("Podrobné výsledky", "section"))
         self.t = table(["Metrika", "A", "B", "Změna B/A (%)"])
         self.t.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.t.setMinimumHeight(480)
         body.addWidget(self.t)
         layout.addWidget(panel)
+        layout.addStretch()
+        layout = charts_layout
         panel, body = card()
-        body.addWidget(label("FPS / průměr intervalů v jednotlivých sekundách", "section"))
+        body.addWidget(label("FPS v průběhu měření", "section"))
+        body.addWidget(label("Průměrná snímková frekvence za každou sekundu.", "muted"))
         self.fps_plot = Plot()
         body.addWidget(self.fps_plot)
-        body.addWidget(label("Frametime / maximum v každé sekundě (ms)", "section"))
+        layout.addWidget(panel)
+        panel, body = card()
+        body.addWidget(label("Špičky frametime", "section"))
+        body.addWidget(label("Nejdelší interval mezi snímky za každou sekundu (ms).", "muted"))
         self.peak_plot = Plot()
         body.addWidget(self.peak_plot)
         note = label("Stutter = frametime nejméně 33,333 ms a současně nejméně 2× medián daného měření. Špičky ≥ 50 ms jsou uvedeny zvlášť. Jde o orientační indikaci, nikoli důkaz konkrétní příčiny. Statistika používá pouze dominantní swap chain (nejvíce vzorků); porovnej také podíl snímků ≥ 50 ms, který má stejný práh v obou měřeních.", "muted")
         note.setWordWrap(True)
         body.addWidget(note)
         layout.addWidget(panel)
+        layout.addStretch()
         self.render()
         self.update_controls()
 
@@ -151,11 +181,14 @@ class BenchmarkPage(QWidget):
         except (OSError, ValueError, RuntimeError) as exc:
             self.show_error("Benchmark nelze spustit", "Zkontroluj FPS měření, název souboru a oprávnění.", str(exc))
         else:
+            self.progress.setValue(0)
             self.status.setText("Benchmark běží. Vrať se do hry.")
         self.update_controls()
 
     def finished(self, path, reason, count):
         self.status.setText(f"{reason} • {count:,} snímků".replace(",", " "))
+        if reason.startswith("Časový limit"):
+            self.progress.setValue(100)
         if count and not reason.startswith("Chyba"):
             self.last_path = path
             self.last_file.setText("Poslední záznam: " + Path(path).name)
@@ -179,7 +212,8 @@ class BenchmarkPage(QWidget):
         if visible:
             recorder = self.capture.benchmark
             if recorder.active:
-                self.status.setText(f"● BENCHMARK   {recorder.elapsed:.0f} / {recorder.duration} s   ·   {recorder.count} snímků")
+                self.status.setText(f"● Probíhá měření · {recorder.elapsed:.0f} / {recorder.duration} s · {recorder.count} snímků")
+                self.progress.setValue(int(100 * recorder.elapsed / recorder.duration))
             self.update_controls()
 
     def choose(self, slot):
@@ -211,7 +245,8 @@ class BenchmarkPage(QWidget):
         else:
             i = self.loading_slot
             self.results[i] = result
-            self.file_labels[i].setText(f"{'AB'[i]}  •  {self.loading_name}")
+            self.file_labels[i].setText(self.loading_name)
+            self.file_labels[i].setToolTip(self.loading_name)
             self.analysis_status.setText("Porovnávej stejnou scénu a podobnou délku měření. Změna je relativní vůči A; při nulovém A není definována.")
             self.render()
         finally:
@@ -220,6 +255,11 @@ class BenchmarkPage(QWidget):
 
     def render(self):
         a, b = self.results
+        delta_fps = relative_change(a.fps, b.fps) if a and b else None
+        delta_low = relative_change(a.low, b.low) if a and b else None
+        summary = "Porovnání se zobrazí po načtení A i B." if delta_fps is None else (
+            f"Průměr FPS: {delta_fps:+.1f} % · 1% Low: " + ("—" if delta_low is None else f"{delta_low:+.1f} %"))
+        self.comparison_summary.setText(summary.replace(".", ","))
         for result, (value, detail) in zip(self.results, self.summary_values):
             value.setText(formatted(result.fps if result else None, digits=1) + " FPS")
             detail.setText("1% Low: " + formatted(result.low if result else None, digits=1) + " FPS")
