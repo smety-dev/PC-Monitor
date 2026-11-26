@@ -112,7 +112,7 @@ class SettingsPage(QWidget):
         row = QHBoxLayout()
         cancel = button(tr("Zrušit"))
         cancel.clicked.connect(dialog.reject)
-        confirm = button(tr("Obnovit"), True)
+        confirm = button(tr("Obnovit nastavení"), True)
         confirm.clicked.connect(dialog.accept)
         row.addStretch()
         row.addWidget(cancel)
