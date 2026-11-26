@@ -53,7 +53,7 @@ class FrameStream:
             return False
         if chain not in self.chains:
             if len(self.chains) >= MAX_CHAINS:
-                oldest = min(self.chains, key=lambda key: self.chains[key][-1][0])
+                oldest = min(self.chains, key=lambda key: self.chains[key][-1][0] if self.chains[key] else -1)
                 del self.chains[oldest]
             self.chains[chain] = deque(maxlen=MAX_FRAMES)
         frames = self.chains[chain]
