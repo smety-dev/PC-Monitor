@@ -1,7 +1,7 @@
 """Local user preferences; runtime sessions and process IDs are never persisted."""
 from gaming_metrics import CORNERS
 
-PAGES = ("Přehled", "Procesor", "Disky", "Síť", "Procesy", "Záznam", "Analýza", "Gaming", "Nastavení")
+PAGES = ("Přehled", "Procesor", "Disky", "Síť", "Procesy", "Záznam", "Analýza", "Gaming", "Benchmark", "Nastavení")
 DEFAULTS = {
     "startup/remember_page": True,
     "startup/remember_geometry": True,
