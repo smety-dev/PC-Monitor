@@ -1,0 +1,40 @@
+name: Bug report
+description: Report a reproducible problem in PC Monitor
+title: "[Bug]: "
+body:
+  - type: input
+    id: version
+    attributes:
+      label: PC Monitor version
+      placeholder: v0.9.5
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Windows version and hardware
+      placeholder: Windows 11, CPU, GPU, RAM
+    validations:
+      required: true
+  - type: dropdown
+    id: distribution
+    attributes:
+      label: Distribution
+      options:
+        - Portable Windows ZIP
+        - Source checkout
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Explain what happened and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or screenshots
+      description: Redact personal information. Never include secrets. For FPS issues, mention whether ETW access is authorized.
