@@ -27,6 +27,21 @@ class StabilityTests(unittest.TestCase):
         self.assertEqual(gpu_description(()), "Název GPU nedostupný")
         self.assertEqual(hardware_names("GPU: \nunknown\n"), ((), ()))
 
+    def test_gpu_worker_switches_after_missing_samples(self):
+        monitor = Monitor()
+        first = SimpleNamespace(stdout=iter(["N/A", "N/A", "N/A"]))
+        def valid_samples():
+            yield "42"
+            self.assertEqual(monitor.gpu, 42)
+            monitor.stop_event.set()
+        second = SimpleNamespace(stdout=valid_samples())
+        with patch.object(monitor, "launch", side_effect=[first, second]) as launch, \
+             patch.object(monitor, "release"), patch.object(monitor.stop_event, "wait"):
+            monitor.gpu_worker()
+        from pc_monitor.ui.qt_monitor import GPU_COMMAND, GPU_COUNTER_FALLBACK
+        self.assertEqual([call.args[0] for call in launch.call_args_list],
+                         [GPU_COMMAND, GPU_COUNTER_FALLBACK])
+
     def test_gpu_stale(self):
         monitor = Monitor()
         monitor._gpu_sample = (42.0, 100.0)
