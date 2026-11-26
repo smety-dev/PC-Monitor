@@ -188,7 +188,8 @@ class BenchmarkPage(QWidget):
         self.update_controls()
 
     def finished(self, path, reason, count):
-        self.status.setText(tr(f"{reason} • {count:,} snímků").replace(",", " "))
+        frame_count = f"{count:,}".replace(",", " ")
+        self.status.setText(f"{tr(reason)} • {frame_count} {tr('Snímky').lower()}")
         if reason.startswith("Časový limit"):
             self.progress.setValue(100)
         if count and not reason.startswith("Chyba"):
