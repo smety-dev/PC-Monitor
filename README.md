@@ -116,9 +116,13 @@ Load `pc-monitor-benchmark-demo-A.csv` and `pc-monitor-benchmark-demo-B.csv` int
 
 ## Visual design
 
+The overview shows utilization, available memory, disk and network throughput, a rolling history and device details. FPS capture and overlay controls occupy separate tabs; Benchmark separates recording, comparison and graphs, with a progress bar and a concise A/B summary. Existing CSV formats, sampling and permission requirements remain unchanged.
+
 The shared Qt theme defines color, typography and spacing tokens. Navigation icons use one monochrome tint in every state, with selection conveyed by the button background and text. The application prefers an installed Segoe UI Variable font and falls back to other installed sans-serif families; charts use the same family when available to Matplotlib. The sidebar scrolls on smaller windows. Benchmark cards summarize A/B FPS and 1% low, and comparison colors indicate the direction of improvement. No font files, dependencies or capture changes are introduced.
 
 ## Testing
+
+The UI smoke tests use an offscreen Qt window and synthetic metrics with an isolated settings store. They exercise navigation, tab routing, metric rendering and benchmark comparison without starting hardware workers, PresentMon or changing real user preferences. They do not replace manual visual and ETW validation on Windows.
 
 ```powershell
 python -m unittest discover -v
