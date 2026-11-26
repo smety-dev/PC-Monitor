@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.9.3 — Early development**
+**Current version: v0.9.4 — Early development**
 
 ## Features
 
@@ -23,6 +23,7 @@ A lightweight Windows application for real-time hardware performance monitoring,
 - Optional PresentMon-based live FPS, frametimes and rolling 1% low
 - Persistent local preferences and themed settings workspace
 - Lower-overhead background sampling, reusable plot artists and bounded local diagnostics
+- Timed per-frame gaming benchmark CSV recording, stutter analysis and A/B comparison
 
 ## Requirements
 
@@ -43,7 +44,7 @@ python main.py
 
 ## Dashboard
 
-The sidebar switches between the overview, CPU, disks, network, process, recording, analysis, gaming and settings pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The new desktop interface uses PySide6 and matplotlib. 
+The sidebar switches between the overview, CPU, disks, network, process, recording, analysis, gaming, benchmark and settings pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The new desktop interface uses PySide6 and matplotlib. 
 
 ## Advanced monitoring
 
@@ -73,7 +74,7 @@ Open Gaming and enable Gaming Mode. Choose a connected monitor, corner, backgrou
 
 The capture uses the official console application's CSV stdout stream with legacy metrics, a private ETW session, and a selected PID. [PresentMon documentation](https://github.com/GameTechDev/PresentMon/blob/v2.3.1/README-ConsoleApplication.md). No injection or changes to game files. ETW access can be restricted on some systems; use only with authorized permissions, and check the status message if capture fails. No automatic elevation is requested. Confirmed ETW access-denied errors are explained in a themed Qt dialog in Czech, with expandable/copyable diagnostic details; on a managed PC request access from IT, or use an authorized administrator account on a personal PC. Other monitoring functions remain available.
 
-FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second window; average FPS uses the recent ten-second window. The 1% low is 1000 divided by the mean interval of the slowest ceil(1% of N) frames in that ten-second window (at least 100 frames). The dominant swap chain by recent present count is selected instead of combining chains. These are present-rate metrics, not displayed FPS, input latency, or an explicit frame-generation measurement. A gap in received data of more than three seconds clears live values. The chart displays the most recent 120 frames; the rolling buffer is bounded to 12,000 frames per swap chain. Capture runs independently of Gaming Mode and the existing hardware CSV recorder; FPS/frametimes are not yet stored in that CSV or its offline analyzer. No extra pip packages are required. Windows capture and game compatibility require practical validation.
+FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second window; average FPS uses the recent ten-second window. The 1% low is 1000 divided by the mean interval of the slowest ceil(1% of N) frames in that ten-second window (at least 100 frames). The dominant swap chain by recent present count is selected instead of combining chains. These are present-rate metrics, not displayed FPS, input latency, or an explicit frame-generation measurement. A gap in received data of more than three seconds clears live values. The chart displays the most recent 120 frames; the rolling buffer is bounded to 12,000 frames per swap chain. Capture runs independently of Gaming Mode and the existing hardware CSV recorder; FPS/frametimes are recorded separately through the Benchmark workspace; the existing hardware CSV format is unchanged. No extra pip packages are required. Windows capture and game compatibility require practical validation.
 
 ## Build a distributable source ZIP
 
@@ -81,7 +82,7 @@ FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second wind
 python presentmon_bundle.py --package
 ```
 
-The script creates `dist/PC-Monitor-v0.9.3-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
+The script creates `dist/PC-Monitor-v0.9.4-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
 
 ## Settings & preferences
 
@@ -95,13 +96,31 @@ GPU 3D utilization uses one continuous PowerShell counter stream at two-second i
 
 Local diagnostic messages are written to `%LOCALAPPDATA%/PC Monitor/logs/diagnostics.log` (512 KiB per file, two rotated backups). No telemetry is uploaded; logs do not store raw CSV contents or process lists. If storage is unavailable, diagnostics are disabled without stopping monitoring. Windows GPU counter availability, shutdown behavior and actual performance gains require testing on a real system; no benchmark numbers are claimed.
 
+## Gaming Performance Analyzer
+
+1. Start the game, select its process in Gaming and start FPS measurement. PresentMon still requires authorized ETW access.
+2. Open Benchmark, select 30, 60, 120 or 300 seconds, click Spustit benchmark, choose a new local CSV and return to the game. Use the same scene and comparable conditions for each run. The benchmark continues when the main window is minimized; it stops at the time limit, on manual stop, when FPS capture ends, on application exit or at the 500,000-row safety cap.
+3. Load the finished benchmark into slot A. Repeat with different settings and load into B. Compare average present-rate FPS, 1% low (at least 100 frames), mean/median/maximum frametime, adaptive stutter share and fixed ≥ 50 ms hitch share. Relative changes are B versus A; share differences are percentage points.
+
+The separate benchmark CSV contains elapsed seconds, swap-chain identifier and individual present intervals in milliseconds (UTF-8 BOM, semicolon delimiter, decimal comma). FPS is calculated from intervals, not separately sampled. Recording uses the existing capture stream and writes buffered batches; the first event per chain is excluded because its interval may cross the start boundary. Files are created exclusively and never overwritten. The capture duration is based on receipt time; chart time is based on PresentMon timestamps relative to the first observed event. Startup switching/loading can affect results; a stopped or failed capture may be incomplete. The analyzer selects the chain with the most valid samples across the file rather than mixing chains, so verify comparable gameplay and chain behavior. Results are present-rate metrics, not displayed FPS or GPU/CPU bottleneck proof.
+
+A stutter is an interval ≥ max(33.333 ms, 2 × the median interval of that run). This is a heuristic, and its threshold may differ across runs. Fixed ≥ 50 ms hitch share uses an identical threshold in both runs. Charts show per-second average present rate and per-second maximum frametime, preserving spikes rather than averaging them away; gaps remain missing. Raw files are bounded to 500,000 rows, 256 chains and 300 seconds. Offline analysis runs in a worker; no additional capture process or packages are required. Hardware utilization is not synchronized with these frame samples, so the analyzer does not infer a CPU/GPU bottleneck.
+
+To test the analyzer without ETW access, create **synthetic** demonstration recordings:
+
+```powershell
+python gaming_benchmark.py --demo
+```
+
+Load `pc-monitor-benchmark-demo-A.csv` and `pc-monitor-benchmark-demo-B.csv` into the two slots. These are generated example data, not actual game measurements. Existing files are preserved.
+
 ## Testing
 
 ```powershell
 python -m unittest discover -v
 ```
 
-Run the application and exercise all nine pages after installing requirements. The automated tests cover monitoring, CSV logic, overlay helpers, frame metric calculations, PresentMon bundle verification and error handling, preferences, performance/stability helpers, and version metadata consistency.
+Run the application and exercise all ten pages after installing requirements. The automated tests cover monitoring, CSV logic, overlay helpers, frame metric calculations, PresentMon bundle verification and error handling, preferences, performance/stability helpers, benchmark recording and analysis, and version metadata consistency.
 
 ## Versioning
 
