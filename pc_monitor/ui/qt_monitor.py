@@ -11,6 +11,24 @@ from pc_monitor.core.diagnostics import LOG
 
 GPU_COMMAND = r"""
 $ErrorActionPreference = 'Stop'
+while ($true) {
+    $samples = @(Get-CimInstance -ClassName Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine |
+        Where-Object { $_.Name -match 'engtype_3D$' -and $null -ne $_.UtilizationPercentage })
+    $value = $samples |
+        Group-Object { $_.Name -replace '^pid_\d+_', '' } |
+        ForEach-Object { ($_.Group | Measure-Object -Property UtilizationPercentage -Sum).Sum } |
+        Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+    if ($samples.Count -gt 0 -and $null -ne $value) {
+        [Console]::WriteLine(([double]$value).ToString([Globalization.CultureInfo]::InvariantCulture))
+    } else {
+        [Console]::WriteLine('N/A')
+    }
+    Start-Sleep -Seconds 2
+}
+"""
+
+GPU_COUNTER_FALLBACK = r"""
+$ErrorActionPreference = 'Stop'
 Get-Counter '\GPU Engine(*engtype_3D)\Utilization Percentage' -SampleInterval 2 -Continuous |
 ForEach-Object {
     $value = $_.CounterSamples |
@@ -192,26 +210,37 @@ Get-CimInstance Win32_VideoController | ForEach-Object { 'GPU: ' + $_.Name }
     def gpu_worker(self):
         # One continuous counter session instead of repeatedly launching PowerShell.
         delay = 2
+        commands = (GPU_COMMAND, GPU_COUNTER_FALLBACK)
+        source = 0
         while not self.stop_event.is_set():
             child = None
             received = False
+            missing = 0
             try:
-                child = self.launch(GPU_COMMAND)
+                child = self.launch(commands[source])
                 if child is None:
                     return
                 for line in child.stdout:
                     if self.stop_event.is_set():
                         break
-                    self._gpu_sample = (gpu_value(line), time.monotonic())
-                    received = True
+                    value = gpu_value(line)
+                    self._gpu_sample = (value, time.monotonic())
+                    if value is not None:
+                        received = True
+                        missing = 0
+                    else:
+                        missing += 1
+                        if missing >= 3:
+                            break
                 if not self.stop_event.is_set():
-                    LOG.warning("GPU counter stream ended; retrying")
+                    LOG.warning("GPU source %s ended; switching source", source)
             except (OSError, subprocess.SubprocessError):
                 if not self.stop_event.is_set():
-                    LOG.warning("GPU counter stream unavailable; retrying")
+                    LOG.warning("GPU source %s unavailable; switching source", source)
             finally:
                 self._gpu_sample = (None, 0.0)
                 if child is not None:
                     self.release(child)
+            source = (source + 1) % len(commands)
             delay = 2 if received else min(30, delay * 2)
             self.stop_event.wait(delay)
