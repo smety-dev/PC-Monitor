@@ -18,7 +18,7 @@ NOTICE_URL = "https://raw.githubusercontent.com/GameTechDev/PresentMon/v2.3.1/RE
 RUNTIME_FILES = (
     "main.py", "qt_gui.py", "qt_theme.py", "qt_pages.py", "qt_monitor.py",
     "qt_gaming.py", "gaming_metrics.py", "qt_fps.py", "process_picker.py",
-    "presentmon_capture.py", "presentmon_bundle.py", "frame_metrics.py",
+    "presentmon_capture.py", "presentmon_bundle.py", "presentmon_errors.py", "frame_metrics.py",
     "hardware_metrics.py", "process_metrics.py", "performance_logger.py",
     "performance_analysis.py", "version.py", "requirements.txt", "README.md",
     "CHANGELOG.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
