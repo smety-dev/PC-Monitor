@@ -2,6 +2,17 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.9.2]
+
+### Added
+- Themed Settings workspace with startup preferences and confirmed reset.
+- Local per-user QSettings persistence for geometry, last page, overlay options, process sampling preference and CSV interval.
+- Validation of saved values, fallback for disconnected overlay monitors and seven preference tests.
+
+### Notes
+- No new dependencies. Active recording and gaming sessions are not restored automatically.
+- Windows settings and geometry validation pending.
+
 ## [0.9.1]
 
 ### Added
