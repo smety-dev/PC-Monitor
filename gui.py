@@ -2,6 +2,7 @@
 import tkinter as tk
 from tkinter import ttk
 import psutil
+from version import __version__
 import subprocess
 import threading
 import time
@@ -19,7 +20,7 @@ gpu_history = deque(maxlen=60)
 
 
 root = tk.Tk()
-root.title("PC Monitor v0.6.2")
+root.title(f"PC Monitor v{__version__}")
 root.geometry("650x850")
 root.configure(bg=BG)
 
