@@ -2,6 +2,20 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.8.2]
+
+### Fixed
+- Keep process table headings readable when hovered or pressed.
+- Exclude the Windows System Idle Process (PID 0) from CPU consumers.
+
+### Added
+- Read-only process manager with live CPU usage, RAM working set and PID.
+- Search by name or PID and sortable columns.
+- Background process sampling with unavailable values and PID reuse handling.
+
+### Notes
+- Windows runtime validation pending; no new dependencies or administrator rights requested.
+
 ## [0.8.1]
 
 ### Fixed
@@ -16,7 +30,7 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 
 ### Notes
 - Existing monitoring backend retained; no additional dependencies or elevation requested.
-- Windows UI validation pending.
+- Windows UI and existing unit tests confirmed by the project owner.
 
 ## [0.8.0]
 
