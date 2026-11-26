@@ -7,7 +7,7 @@ from PySide6.QtCore import QTimer, QByteArray, Qt, QSize
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QVBoxLayout,
     QHBoxLayout, QGridLayout, QStackedWidget, QButtonGroup, QScrollArea, QProgressBar, QComboBox)
 from qt_theme import BLUE, GREEN, ORANGE, MUTED, DANGER, SPACE, MetricCard, card, label, button, navigation_icon, configure_theme
-from qt_monitor import Monitor
+from qt_monitor import Monitor, gpu_description
 from diagnostics import configure_logging, LOG
 from qt_gaming import GamingPage
 from qt_benchmark import BenchmarkPage
@@ -358,7 +358,17 @@ class Window(QMainWindow):
             self.metrics[0].set_value(cpu,f"{psutil.cpu_count(logical=False)} jader / {psutil.cpu_count()} vláken")
             self.metrics[1].set_value(ram.percent, f"{ram.available/1024**3:.1f} GiB volných z {ram.total/1024**3:.1f} GiB")
             gpu = self.monitor.gpu
-            self.metrics[2].set_value(gpu, "Nejvytíženější 3D jednotka" if gpu is not None else "GPU data nedostupná")
+            names = self.monitor.gpu_names
+            gpu_card = self.metrics[2]
+            gpu_card.set_value(gpu, gpu_description(names))
+            tooltip = "\n".join(names) if names else "Název grafické karty se nepodařilo zjistit."
+            if len(names) > 1:
+                tooltip += "\nVytížení nejvytíženější 3D jednotky; konkrétní adaptér není rozlišen."
+            if gpu is None:
+                tooltip += "\nData o vytížení GPU nejsou dostupná."
+            if gpu_card.toolTip() != tooltip:
+                gpu_card.setToolTip(tooltip)
+            gpu_card.detail.setToolTip(tooltip)
             rates = (*(sample.get("disk_rates") or (None, None)), *(sample.get("net_rates") or (None, None)))
             for widget, value in zip(self.activity_values, rates):
                 widget.setText(rate(value) if value is not None else "— MiB/s")
