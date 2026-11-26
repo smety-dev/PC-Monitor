@@ -19,12 +19,33 @@ gpu_history = deque(maxlen=60)
 
 
 root = tk.Tk()
-root.title("PC Monitor v0.6.1")
+root.title("PC Monitor v0.6.2")
 root.geometry("650x850")
 root.configure(bg=BG)
 
 style = ttk.Style()
 style.theme_use("clam")
+def get_hardware():
+    command = """
+    Get-CimInstance Win32_Processor |
+    Select-Object -ExpandProperty Name
+
+    Get-CimInstance Win32_VideoController |
+    Select-Object -ExpandProperty Name
+    """
+
+    try:
+        result = subprocess.check_output(
+            ["powershell", "-NoProfile", "-Command", command],
+            text=True,
+            timeout=10,
+            creationflags=subprocess.CREATE_NO_WINDOW
+        )
+
+        return result.strip()
+
+    except (OSError, subprocess.SubprocessError):
+        return "Hardware detection unavailable"
 
 def create_meter(name, color):
     frame = tk.Frame(root, bg=PANEL)
@@ -66,6 +87,15 @@ title = tk.Label(
     fg="white"
 )
 title.pack(pady=20)
+hardware_label = tk.Label(
+    root,
+    text=get_hardware(),
+    font=("Arial", 11),
+    bg=BG,
+    fg="#94a3b8"
+)
+
+hardware_label.pack(pady=5)
 
 cpu_label, cpu_bar = create_meter("CPU", "#60a5fa")
 ram_label, ram_bar = create_meter("RAM", "#f59e0b")
