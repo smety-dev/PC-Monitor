@@ -1,17 +1,20 @@
 """Qt workspaces for process monitoring, recording and analysis."""
 from datetime import datetime
+from bisect import bisect_left
+import math
 from threading import Event
 from diagnostics import LOG
 from qt_dialogs import ErrorDialog
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from PySide6.QtCore import Qt, QTimer, QPointF
-from PySide6.QtGui import QWheelEvent
+from PySide6.QtGui import QWheelEvent, QCursor
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QComboBox,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QFileDialog,
-    QAbstractScrollArea, QApplication)
+    QAbstractScrollArea, QApplication, QToolTip)
 from matplotlib import rcParams, font_manager
 from matplotlib.figure import Figure
+from matplotlib.ticker import MaxNLocator, FuncFormatter, FixedLocator
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from qt_theme import card, label, button, PANEL, TEXT, MUTED, BLUE, GREEN, ORANGE, GRID, SPACE
 from process_metrics import filter_sort
@@ -80,7 +83,56 @@ class Plot(FigureCanvasQTAgg):
         self._layout_key = None
         self._data_key = None
         self._artists = []
+        self._hover_data = ((), (), False, "", None)
+        self._hover_text = None
+        self.mpl_connect("motion_notify_event", self.hover)
+        self.mpl_connect("figure_leave_event", self.hide_hover)
         self.render([], [], True)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if not hasattr(self, "ax"):
+            return
+        width, height = max(1, self.width()), max(1, self.height())
+        # Fixed logical-pixel gutters remain symmetric at different window sizes.
+        gutter = min(.20, 54 / width)
+        self.figure.subplots_adjust(left=gutter, right=1-gutter,
+                                    top=1-min(.25, 30/height),
+                                    bottom=min(.30, 38/height))
+        self.draw_idle()
+
+    def hide_hover(self, *_):
+        if self._hover_text is not None:
+            QToolTip.hideText()
+            self._hover_text = None
+
+    def hover(self, event):
+        x, lines, percentage, unit, rolling = self._hover_data
+        if event.inaxes is not self.ax or event.xdata is None or not x:
+            self.hide_hover()
+            return
+        i = bisect_left(x, event.xdata)
+        if i >= len(x):
+            i = len(x)-1
+        elif i and abs(x[i-1]-event.xdata) <= abs(x[i]-event.xdata):
+            i -= 1
+        # In the rolling view, don't snap the empty area to a distant sample.
+        if rolling and abs(x[i]-event.xdata) > 2:
+            self.hide_hover()
+            return
+        suffix = "%" if percentage else unit
+        heading = ("Nejnovější vzorek" if abs(x[i]) < .05 else f"{abs(x[i]):.1f} s zpět") if rolling else f"{x[i]:.2f}".rstrip("0").rstrip(".")
+        texts = [heading.replace(".", ",")]
+        for name, _, values in lines:
+            value = values[i]
+            if value is not None and math.isfinite(value):
+                texts.append(f"{name}: {fmt(value, 1)}" + (" " + suffix if suffix else ""))
+            else:
+                texts.append(f"{name}: —")
+        tooltip = "\n".join(texts)
+        if tooltip != self._hover_text or not QToolTip.isVisible():
+            QToolTip.showText(QCursor.pos(), tooltip, self)
+            self._hover_text = tooltip
 
     def wheelEvent(self, event):
         # Matplotlib normally consumes the wheel for graph interactions.
@@ -100,25 +152,36 @@ class Plot(FigureCanvasQTAgg):
         QApplication.sendEvent(viewport, forwarded)
         event.accept()
 
-    def render(self, x, lines, percentage=False, xlabel="Uplynulý čas (s)"):
+    def render(self, x, lines, percentage=False, xlabel="Uplynulý čas (s)",
+               *, unit="", rolling_seconds=None):
         # Retain axes and line artists across ordinary updates.
         x = tuple(x)
         lines = [(name, color, tuple(values)) for name, color, values in lines]
-        layout_key = (percentage, xlabel, tuple((name, color) for name, color, _ in lines))
+        layout_key = (percentage, xlabel, unit, rolling_seconds, tuple((name, color) for name, color, _ in lines))
         data_key = (x, tuple(values for _, _, values in lines))
         if layout_key == self._layout_key and data_key == self._data_key:
             return
+        self._hover_data = (x, lines, percentage, unit, rolling_seconds)
         a = self.ax
         if layout_key != self._layout_key:
             a.clear()
             a.set_facecolor(PANEL)
-            a.tick_params(colors=MUTED, labelsize=9, length=0, pad=7)
+            a.tick_params(colors=MUTED, labelsize=10, length=0, pad=6)
             a.set_axisbelow(True)
-            a.grid(axis="y", color=GRID, alpha=.7, linewidth=.8)
+            a.grid(axis="y", color=GRID, alpha=.8, linewidth=.8)
+            a.xaxis.set_major_locator(MaxNLocator(nbins=5))
+            a.yaxis.set_major_locator(MaxNLocator(nbins=4))
+            a.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}".replace(".", ",") + ("%" if percentage else "")))
+            a.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}".replace(".", ",")))
+            if percentage:
+                a.yaxis.set_major_locator(FixedLocator([0, 25, 50, 75, 100]))
+            if rolling_seconds:
+                a.xaxis.set_major_locator(FixedLocator([-rolling_seconds, -.75*rolling_seconds, -.5*rolling_seconds, -.25*rolling_seconds, 0]))
+                a.xaxis.set_major_formatter(FuncFormatter(lambda v, _: "Teď" if abs(v) < .01 else f"−{abs(v):g} s"))
             for spine in a.spines.values():
                 spine.set_visible(False)
-            a.set_xlabel(xlabel, color=MUTED, fontsize=9, labelpad=8)
-            self._artists = [a.plot([], [], color=color, label=name, linewidth=1.8, solid_capstyle="round", solid_joinstyle="round")[0]
+            a.set_xlabel(xlabel, color=MUTED, fontsize=9, labelpad=6)
+            self._artists = [a.plot([], [], color=color, label=name, linewidth=2.0, solid_capstyle="round", solid_joinstyle="round")[0]
                              for name, color, _ in lines]
             if lines:
                 a.legend(frameon=False, labelcolor=TEXT, loc="lower center",
@@ -131,13 +194,21 @@ class Plot(FigureCanvasQTAgg):
                        ha="center", va="center", color=MUTED, fontsize=12)
         for artist, (_, _, values) in zip(self._artists, lines):
             artist.set_data(x, [float("nan") if value is None else value for value in values])
-            artist.set_marker("." if len(x) == 1 else "None")
+            if rolling_seconds and values and values[-1] is not None and math.isfinite(values[-1]):
+                artist.set_marker("o")
+                artist.set_markersize(4)
+                artist.set_markevery([len(x)-1])
+            else:
+                artist.set_marker("." if len(x) == 1 else "None")
+                artist.set_markevery(None)
         if lines:
             a.set_autoscalex_on(True)
             a.set_autoscaley_on(not percentage)
             a.relim()
             a.autoscale_view()
-            if x:
+            if rolling_seconds:
+                a.set_xlim(-rolling_seconds, 0)
+            elif x:
                 first, last = min(x), max(x)
                 padding = (last - first) * .02 if first != last else .5
                 a.set_xlim(first - padding, last + padding)
