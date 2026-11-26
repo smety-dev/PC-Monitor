@@ -144,7 +144,7 @@ class FpsPanel(QWidget):
             if stats:
                 self.status.setText(f"Měřím • {stats.count} vzorků / max. 10 s • swap chain {stats.chain}")
                 self.plot.render(list(range(1-len(stats.graph), 1)),
-                                 [("Frametime (ms)", BLUE, stats.graph)], xlabel="Snímky")
+                                 [("Frametime", BLUE, stats.graph)], xlabel="Snímky", unit="ms")
                 self.had_graph = True
             elif self.had_graph:
                 self.plot.render([], [])
