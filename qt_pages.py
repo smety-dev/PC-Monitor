@@ -67,7 +67,7 @@ def populate(t, rows):
 
 
 def fmt(value, decimals=1):
-    return "N/A" if value is None else f"{value:.{decimals}f}"
+    return "—" if value is None else f"{value:.{decimals}f}".replace(".", ",")
 
 
 class Plot(FigureCanvasQTAgg):
@@ -156,7 +156,8 @@ class Processes(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2 * SPACE)
         self.search = QLineEdit()
-        self.search.setPlaceholderText("Vyhledat proces nebo PID")
+        self.search.setPlaceholderText("Hledat podle názvu nebo PID…")
+        self.search.setClearButtonEnabled(True)
         layout.addWidget(self.search)
         self.status = label("Čekám na data", "muted")
         layout.addWidget(self.status)
@@ -166,7 +167,9 @@ class Processes(QWidget):
             self.t.horizontalHeader().setSectionResizeMode(i,QHeaderView.ResizeMode.Fixed)
             self.t.setColumnWidth(i,110)
         layout.addWidget(self.t)
-        layout.addWidget(label("CPU = podíl celkové kapacity • RAM = RSS • N/A = nedostupné", "muted"))
+        hint = label("Kliknutím na hlavičku seřadíš procesy. CPU je podíl celkového výkonu; RAM je rezidentní paměť (RSS). — znamená nedostupná data.", "muted")
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
         self.rows = None
         self.key = "cpu"
         self.desc = True
@@ -203,8 +206,11 @@ class Recording(QWidget):
         panel, body = card()
         layout.addWidget(panel)
         body.addWidget(label("Záznam výkonu do CSV", "section"))
-        self.status = label("Připraveno", "muted")
+        self.status = label("Připraveno k záznamu", "status")
         body.addWidget(self.status)
+        hint = label("Zvol interval, spusť měření a vyber, kam uložit soubor CSV.", "muted")
+        hint.setWordWrap(True)
+        body.addWidget(hint)
         self.stats = label("0 vzorků  ·  0 s", "value")
         body.addWidget(self.stats)
         controls = QHBoxLayout()
@@ -240,6 +246,7 @@ class Recording(QWidget):
         self.stop_button.setEnabled(active)
         self.interval.setEnabled(not active)
         self.stats.setText(f"{self.recorder.count} vzorků  ·  {self.recorder.elapsed:.0f} s")
+        self.status.setStyleSheet("color: " + (GREEN if active else MUTED))
 
     def start(self):
         path,_ = QFileDialog.getSaveFileName(self,"Uložit záznam",datetime.now().strftime("pc-monitor-%Y%m%d-%H%M%S.csv"),"CSV (*.csv)")
@@ -315,7 +322,7 @@ class Analysis(QWidget):
         self.group.currentTextChanged.connect(self.draw)
         bar.addWidget(self.group)
         layout.addLayout(bar)
-        self.info = label("Vyber záznam PC Monitoru", "muted")
+        self.info = label("Začni výběrem uloženého hardwarového CSV ze sekce Záznam.", "muted")
         self.info.setWordWrap(True)
         layout.addWidget(self.info)
         kpis = QHBoxLayout()
@@ -335,7 +342,7 @@ class Analysis(QWidget):
         body.addWidget(self.plot)
         layout.addWidget(panel,1)
         self.t = table(["Metrika","Minimum","Průměr","Maximum","Vzorky"])
-        self.t.setMinimumHeight(210)
+        self.t.setMinimumHeight(330)
         layout.addWidget(self.t)
         self.hints = label("", "muted")
         self.hints.setWordWrap(True)
