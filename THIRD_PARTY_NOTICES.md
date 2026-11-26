@@ -12,4 +12,4 @@ PC Monitor retains its own MIT license (see LICENSE).
 
 The distribution preparation script retrieves and retains the complete upstream README from the v2.3.1 tag, including its license and copyright notice, as tools/PresentMon-README.md. The source ZIP includes that file alongside the unmodified binary. Do not redistribute the binary without its upstream notices.
 
-Python packages are installed separately in this source distribution and retain their own licenses. A future standalone executable must include the notices for all bundled dependencies, including Qt/PySide6, under their applicable terms.
+Python packages are installed separately in this source distribution and retain their own licenses. The portable Windows build includes collected dependency notices and a build-dependency manifest. Qt/PySide6 and all other bundled components retain their applicable terms; verify the corresponding source, license notices and redistribution obligations before distributing a new build. See [RELEASE_NOTES.md](RELEASE_NOTES.md).

@@ -13,7 +13,10 @@ This is a proposal, not a promise of dates or version numbers.
 
 - [x] English and Czech interface translations, including dialogs, charts and overlay
 - [x] Language selection with system-language fallback and saved preference
-- [ ] Verify both languages in the Windows release candidate; CSV schemas retained
+- [x] Both languages passed the initial Windows regression tests and manual checks; CSV schemas retained
+- [x] Organize application modules, tests and build tooling into packages
+- [x] Update English website and README preview
+- [ ] Validate the reorganized Windows package before release
 
 ## Reliability and feedback
 

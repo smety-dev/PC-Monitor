@@ -27,7 +27,7 @@ A lightweight Windows application for real-time hardware performance monitoring,
 
 ## Portable Windows build
 
-Download the published Windows x64 ZIP from [Releases](https://github.com/smety-dev/PC-Monitor/releases/tag/v0.9.5), extract the entire archive and launch `PC-Monitor.exe`; Python is not needed. The executable is unsigned, so Windows may display a SmartScreen warning. Keep the `_internal` and `tools` directories together with the executable. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for known limitations and third-party licensing details.
+Download the published Windows x64 ZIP from [Releases](https://github.com/smety-dev/PC-Monitor/releases), extract the entire archive and launch `PC-Monitor.exe`; Python is not needed. The executable is unsigned, so Windows may display a SmartScreen warning. Keep the `_internal` and `tools` directories together with the executable. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for known limitations and third-party licensing details.
 
 For developers, build in a clean Windows x64 Python 3.13 virtual environment:
 
@@ -35,10 +35,14 @@ For developers, build in a clean Windows x64 Python 3.13 virtual environment:
 py -3.13 -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements-build.txt
 .venv\Scripts\python.exe -m unittest discover -v
-.venv\Scripts\python.exe build_windows.py
+.venv\Scripts\python.exe -m scripts.build_windows
 ```
 
 The GitHub Actions Windows beta build performs these steps automatically and uploads the candidate ZIP and SHA-256 checksum, plus a startup screenshot. No automatic release publication or administrator elevation is enabled. Check the actual artifact and bundled licenses before publishing. Build dependencies are separate from the runtime requirements.
+
+## Repository layout
+
+Application modules are grouped under `pc_monitor/` (ui, core, gaming and locales). Tests live in `tests/`, build tooling in `scripts/`, and the project website in `docs/`. All commands below are run from the repository root.
 
 ## Requirements (source checkout)
 
@@ -51,7 +55,7 @@ The GitHub Actions Windows beta build performs these steps automatically and upl
 
 ```powershell
 python -m pip install -r requirements.txt
-python presentmon_bundle.py
+python -m pc_monitor.gaming.presentmon_bundle
 python main.py
 ```
 
@@ -83,7 +87,7 @@ Open Gaming and enable Gaming Mode. Choose a connected monitor, corner, backgrou
 
 ## FPS & frametime capture (optional)
 
-1. PresentMon 2.3.1 is included in the prepared source distribution or installed into a development checkout using `python presentmon_bundle.py`. The Gaming page automatically locates and verifies the included executable; there is no manual EXE picker. If the module is missing in a portable build, re-extract the complete release archive. In a source checkout, run preparation and click Zkontrolovat modul.
+1. PresentMon 2.3.1 is included in the prepared source distribution or installed into a development checkout using `python -m pc_monitor.gaming.presentmon_bundle`. The Gaming page automatically locates and verifies the included executable; there is no manual EXE picker. If the module is missing in a portable build, re-extract the complete release archive. In a source checkout, run preparation and click Zkontrolovat modul.
 2. Start your game, click Vybrat hru / aplikaci and search for its actual process (not the launcher) by name, window title or PID. The default filter shows processes with visible titled windows; enable the checkbox to include background processes, and use Obnovit to refresh the list.
 3. Click Spustit FPS měření. Enable Gaming Mode if you want the FPS metrics in the overlay. Stop capture with Zastavit měření or close PC Monitor.
 
@@ -94,7 +98,7 @@ FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second wind
 ## Build a distributable source ZIP
 
 ```powershell
-python presentmon_bundle.py --package
+python -m pc_monitor.gaming.presentmon_bundle --package
 ```
 
 The script creates `dist/PC-Monitor-v0.9.6-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
@@ -128,7 +132,7 @@ A stutter is an interval ≥ max(33.333 ms, 2 × the median interval of that run
 To test the analyzer without ETW access, create **synthetic** demonstration recordings:
 
 ```powershell
-python gaming_benchmark.py --demo
+python -m pc_monitor.gaming.gaming_benchmark --demo
 ```
 
 Load `pc-monitor-benchmark-demo-A.csv` and `pc-monitor-benchmark-demo-B.csv` into the two slots. These are generated example data, not actual game measurements. Existing files are preserved.
@@ -151,7 +155,7 @@ Run the application and exercise all ten pages after installing requirements. Th
 
 ## Versioning
 
-The application version is defined in [`version.py`](version.py) and displayed by the Qt application. When releasing an update, update that file, the current version in README.md, and [`CHANGELOG.md`](CHANGELOG.md). README and changelog updates are manual.
+The application version is defined in [`pc_monitor/version.py`](pc_monitor/version.py) and displayed by the Qt application. When releasing an update, update that file, the current version in README.md, the website version metadata in `docs/index.html`, and [`CHANGELOG.md`](CHANGELOG.md). README and changelog updates are manual.
 
 ## Planned features
 
