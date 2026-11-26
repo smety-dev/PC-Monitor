@@ -1,8 +1,14 @@
 import unittest
-from process_metrics import ProcessRow, cpu_share, filter_sort
+from unittest.mock import patch, Mock
+from process_metrics import ProcessRow, ProcessSampler, cpu_share, filter_sort
 
 
 class ProcessMetricsTests(unittest.TestCase):
+    def test_idle_process_excluded(self):
+        idle = Mock(info={"pid": 0})
+        with patch("process_metrics.psutil.process_iter", return_value=[idle]):
+            self.assertEqual(ProcessSampler().sample(), ())
+
     def test_cpu_share(self):
         self.assertEqual(cpu_share(10, 12, 2, 4), 25)
         self.assertEqual(cpu_share(10, 10, 2, 4), 0)
