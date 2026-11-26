@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.8.3 — Early development**
+**Current version: v0.8.4 — Early development**
 
 ## Features
 
@@ -18,6 +18,7 @@ A lightweight Windows application for real-time hardware performance monitoring,
 - Aggregate network receive/send throughput
 - Read-only process manager with CPU and RAM usage, PID search and sortable columns
 - Local performance CSV recording with selectable sampling interval
+- Offline performance analysis with charts and sample statistics
 
 ## Requirements
 
@@ -50,6 +51,10 @@ Search by process name or PID and click column headings to sort. CPU is normaliz
 ## Performance recording
 
 Open Záznam (Recording), select 1, 2, 5 or 10 seconds and choose a new CSV file. Existing files are never overwritten. Recording continues while navigating other pages and stops on application exit. CSV uses UTF-8 with BOM, semicolon separators, Czech column names, decimal commas for Czech Excel, local date/time to seconds, elapsed seconds and explicit metric units. For other locales, import CSV with semicolon delimiter and Czech decimal settings. Missing values are blank; GPU and advanced readings are independently polled and may repeat. Actual sampling times depend on GUI scheduling. Data stays local; no upload or administrator elevation is requested. Choose a writable local directory (not a network drive). No per-process data or temperatures are recorded.
+
+## Performance analyzer
+
+Open Analýza and load an original PC Monitor CSV file (Czech or older English headers). The analyzer displays sample counts, last elapsed time, minimum, arithmetic mean and maximum for available values, plus selectable graphs. Invalid elapsed-time rows are skipped; invalid metric cells are unavailable. The graph subsamples very long recordings for responsiveness; statistics use all accepted rows. Files are limited to 500,000 data rows. Utilization hints are heuristic, not a bottleneck diagnosis: FPS, frame times and per-core history are not recorded. No data is uploaded.
 
 ## Versioning
 
