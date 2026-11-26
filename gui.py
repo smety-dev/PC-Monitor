@@ -238,7 +238,7 @@ def update_details(sample):
             frame.grid(row=i//2, column=col, sticky="ew", padx=8, pady=6)
             value_label = label(frame, f"CPU {i}", 10)
             value_label.pack(anchor="w")
-            bar = ttk.Progressbar(frame, maximum=100, style="Dashboard.TProgressbar")
+            bar = ttk.Progressbar(frame, maximum=100, orient="horizontal", style="Dashboard.Horizontal.TProgressbar")
             bar.pack(fill="x", pady=3)
             core_widgets.append((value_label, bar))
     for i, (value, widgets) in enumerate(zip(cores, core_widgets)):
@@ -264,7 +264,7 @@ def update_details(sample):
             label(frame, f"Disk {mount}", 13, TEXT, True).pack(anchor="w", padx=14, pady=(12, 4))
             val = label(frame, "", 11, MUTED)
             val.pack(anchor="w", padx=14)
-            bar = ttk.Progressbar(frame, maximum=100, style="Dashboard.TProgressbar")
+            bar = ttk.Progressbar(frame, maximum=100, orient="horizontal", style="Dashboard.Horizontal.TProgressbar")
             bar.pack(fill="x", padx=14, pady=12)
             drive_widgets[mount] = frame, val, bar
         _, val, bar = drive_widgets[mount]
