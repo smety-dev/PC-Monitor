@@ -146,10 +146,7 @@ class Window(QMainWindow):
             item.clicked.connect(lambda checked=False,index=i:self.navigate(index))
             nav.addWidget(item)
         nav.addStretch()
-        self.live = label("●  Živé měření","muted")
-        self.live.setStyleSheet("color: "+GREEN)
         side.addSpacing(SPACE)
-        side.addWidget(self.live)
         side.addWidget(label("VERSION "+__version__, "eyebrow"))
         last = self.prefs.get("startup/last_page") if self.prefs.get("startup/remember_page") else "Přehled"
         index = next((i for i, view in enumerate(self.views) if view[0] == last), 0)
@@ -334,13 +331,12 @@ class Window(QMainWindow):
         self.gaming.refresh(basic, self.monitor.gpu, self.monitor.advanced, recording or benchmarking, not self.isMinimized())
         state = ("● Benchmark probíhá" if benchmarking else "● Záznam probíhá" if recording else
                  "● Herní režim" if self.gaming.enabled else "● Živé měření" if basic is not None else "● Načítám")
-        self.live.setText(state)
-        self.header_status.setText(state)
+        if self.header_status.text() != state:
+            self.header_status.setText(state)
         color = DANGER if recording or benchmarking else GREEN if basic is not None else MUTED
         style = "color: " + color
         if self.header_status.styleSheet() != style:
             self.header_status.setStyleSheet(style)
-            self.live.setStyleSheet(style)
         if not self.isMinimized():
             self.render_page()
 
