@@ -2,11 +2,11 @@
 import sys
 from collections import deque
 import psutil
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QVBoxLayout,
     QHBoxLayout, QGridLayout, QStackedWidget, QButtonGroup, QScrollArea, QProgressBar,
-    QStyle, QSizePolicy)
+    QStyle)
 from qt_theme import STYLE, BLUE, GREEN, ORANGE, MetricCard, card, label, button
 from qt_monitor import Monitor
 from qt_pages import Processes, Recording, Analysis, Plot, fmt
@@ -40,7 +40,6 @@ class Window(QMainWindow):
         self.setMinimumSize(900,650)
         self.monitor = Monitor()
         self.history = deque(maxlen=60)
-        self.last_sample = None
         root = QWidget()
         self.setCentralWidget(root)
         shell = QHBoxLayout(root)
