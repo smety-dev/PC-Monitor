@@ -2,6 +2,16 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.9.6]
+
+### International Update
+- Czech and English UI, with system-language default (Czech for cs, English otherwise).
+- Language selector in Settings; changes apply on next launch, without interrupting active recordings.
+- Translated navigation, monitoring, charts, recording, analysis, gaming overlay settings, benchmark and application dialogs.
+- Language-neutral persisted page and corner values; existing Czech hardware and benchmark CSV formats remain unchanged.
+- Regression tests for language resolution, persistence and both UI languages. Native Windows dialogs and external diagnostic text can retain their original language.
+- Updated project website, README and build documentation.
+
 ## [0.9.5]
 
 ### Release preparation
