@@ -25,6 +25,10 @@
 
 PC Monitor brings hardware telemetry, process inspection, recording and gaming benchmarks into one dark desktop workspace. The portable release runs without installing Python. The current interface is primarily Czech.
 
+<p align="center"><img src="docs/assets/dashboard-demo.svg" alt="PC Monitor dashboard illustration with simulated activity" width="100%"></p>
+
+<p align="center"><em>Illustrative dashboard based on the v0.9.5 Czech interface. Values are simulated, not measured results.</em></p>
+
 ## What you can do
 
 | Workspace | Features |
