@@ -1,4 +1,5 @@
 """Shared Qt visual components."""
+from i18n import tr, decimal
 from PySide6.QtCore import Qt, QRectF, QByteArray
 from PySide6.QtGui import QColor, QPainter, QPen, QFont, QFontDatabase, QIcon, QPixmap, QPalette
 from PySide6.QtSvg import QSvgRenderer
@@ -175,7 +176,7 @@ def navigation_icon(name):
 
 
 def label(text="", role=None):
-    obj = QLabel(text)
+    obj = QLabel(tr(text))
     obj.setTextFormat(Qt.TextFormat.PlainText)
     if role:
         obj.setProperty("role", role)
@@ -193,7 +194,7 @@ def workspace_tab(tabs, title):
     area.setWidgetResizable(True)
     area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
     area.setWidget(page)
-    tabs.addTab(area, title)
+    tabs.addTab(area, tr(title))
     return layout
 
 
@@ -215,7 +216,7 @@ def card():
 
 
 def button(text, primary=False):
-    obj = QPushButton(text)
+    obj = QPushButton(tr(text))
     obj.setCursor(Qt.CursorShape.PointingHandCursor)
     if primary:
         obj.setObjectName("primary")
@@ -252,13 +253,13 @@ class MetricCard(QFrame):
         self.bar.setStyleSheet("QProgressBar::chunk { background: " + color + "; }")
         layout.addWidget(self.bar)
         self.bar.setHidden(not show_bar)
-        self.detail = label("Čekám na data", "muted")
+        self.detail = label(tr("Čekám na data"), "muted")
         self.detail.setWordWrap(True)
         layout.addWidget(self.detail)
         layout.addStretch()
 
     def set_value(self, value, detail):
-        text = "—" if value is None else f"{value:.1f}".replace(".", ",")
+        text = "—" if value is None else decimal(f"{value:.1f}")
         if self.value.text() != text:
             self.value.setText(text)
         self.bar.setValue(0 if value is None else int(max(0, min(100, value)) * 10))
