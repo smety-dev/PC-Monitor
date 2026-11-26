@@ -9,6 +9,9 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 - Live present-rate FPS, rolling average, 1% low, frametime chart and overlay metrics.
 - Bounded per-swap-chain frame buffers, dominant-chain selection, stale-data handling and seven unit tests.
 
+### Changed
+- Searchable capture-target dialog with window-title filter, PID search and optional background processes.
+
 ### Notes
 - PresentMon executable must be obtained separately. No new pip dependencies. Windows ETW permissions and runtime compatibility require validation.
 - Hardware CSV format is unchanged; frame metrics are live only. Present rate is not displayed FPS.
