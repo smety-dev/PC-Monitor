@@ -2,6 +2,17 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.9.5]
+
+### Changed
+- Unified dark palette, installed modern font selection, chart typography and spacing tokens.
+- One consistent navigation icon tint in all Qt modes and states; scrollable sidebar for smaller windows.
+- Polished tables, buttons, dialogs, gaming overlay and FPS metric layout.
+- Benchmark A/B summary cards and direction-aware comparison colors.
+
+### Notes
+- No new dependencies or capture changes. Windows visual verification pending.
+
 ## [0.9.4]
 
 ### Added
