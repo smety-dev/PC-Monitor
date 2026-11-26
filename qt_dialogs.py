@@ -1,4 +1,5 @@
 """Shared, non-blocking PC Monitor error dialog."""
+from i18n import tr
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPlainTextEdit, QApplication
 from qt_theme import card, label, button, ORANGE, SPACE
@@ -16,13 +17,13 @@ class ErrorDialog(QDialog):
         layout.setContentsMargins(2 * SPACE, 2 * SPACE, 2 * SPACE, 2 * SPACE)
         panel, body = card()
         layout.addWidget(panel)
-        header = label("!   UPOZORNĚNÍ", "muted")
+        header = label(tr("!   UPOZORNĚNÍ"), "muted")
         header.setStyleSheet("color: " + ORANGE + "; font-weight: 600;")
         body.addWidget(header)
-        heading = label(title, "section")
+        heading = label(tr(title), "section")
         heading.setWordWrap(True)
         body.addWidget(heading)
-        explanation = label(message)
+        explanation = label(tr(message))
         explanation.setWordWrap(True)
         body.addWidget(explanation)
         if details:
@@ -34,15 +35,15 @@ class ErrorDialog(QDialog):
             body.addWidget(self.details)
         row = QHBoxLayout()
         if details:
-            self.expand = button("Technické detaily")
+            self.expand = button(tr("Technické detaily"))
             self.expand.setCheckable(True)
             self.expand.toggled.connect(self.toggle_details)
             row.addWidget(self.expand)
-            copy = button("Kopírovat")
+            copy = button(tr("Kopírovat"))
             copy.clicked.connect(lambda: QApplication.clipboard().setText(details))
             row.addWidget(copy)
         row.addStretch()
-        ok = button("Rozumím", True)
+        ok = button(tr("Rozumím"), True)
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
         row.addWidget(ok)
@@ -51,6 +52,6 @@ class ErrorDialog(QDialog):
 
     def toggle_details(self, visible):
         self.details.setVisible(visible)
-        self.expand.setText("Skrýt detaily" if visible else "Technické detaily")
+        self.expand.setText(tr("Skrýt detaily") if visible else tr("Technické detaily"))
         if not visible:
             self.adjustSize()
