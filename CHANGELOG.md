@@ -2,6 +2,17 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.8.4]
+
+### Added
+- Offline CSV analyzer supporting Czech and original English recordings.
+- Selectable utilization, disk, network, frequency and available-memory charts.
+- Sample statistics and cautious high-utilization hints.
+- Background CSV loading and invalid-value handling.
+
+### Notes
+- Windows validation pending. No additional dependencies.
+
 ## [0.8.3]
 
 ### Fixed
