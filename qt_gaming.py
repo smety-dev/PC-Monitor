@@ -77,7 +77,6 @@ class GamingPage(QWidget):
     def __init__(self, monitor, parent_window):
         super().__init__()
         self.monitor = monitor
-        self.window = parent_window
         self.overlay = Overlay()
         self.preview = Overlay(preview=True)
         self.enabled = False
