@@ -2,6 +2,21 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.7.0]
+
+### Added
+- Optional LibreHardwareMonitor CPU and GPU temperature provider.
+- Temperature tab with current readings, session peaks and 60-sample charts.
+- Generic temperature color indicators and unavailable-sensor messages.
+
+### Changed
+- Utilization and temperature charts are separated into tabs.
+- Temperature polling runs in a background thread.
+
+### Known limitations
+- Requires a running LibreHardwareMonitor instance for temperature data.
+- Hardware-specific readings and Windows runtime still require local validation.
+
 ## [0.6.2]
 
 ### Added
