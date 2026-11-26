@@ -91,6 +91,16 @@ class UISmokeTests(unittest.TestCase):
         self.assertEqual(self.window.gaming.tabs.tabText(0), "FPS capture")
         self.assertEqual(self.window.benchmark.tabs.tabText(1), "A/B results")
         self.assertEqual(self.window.analysis.group.itemText(0), "Utilization (%)")
+        self.assertEqual(self.window.analysis.group.currentData(), "Vytížení (%)")
+        page = self.window.benchmark
+        for i, improved in enumerate((False, True)):
+            path = self.folder / f"english-{i}.csv"
+            create_demo(path, improved)
+            page.results[i] = analyze_benchmark(path)
+        page.render()
+        self.assertIn("Average FPS", page.comparison_summary.text())
+        self.assertEqual(page.t.item(0, 0).text(), "Average FPS")
+        self.assertEqual(self.window.plot.ax.xaxis.get_major_formatter()(0), "Now")
         for index in range(len(PAGES)):
             self.window.navigate(index)
             self.window.refresh()
