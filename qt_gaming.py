@@ -4,7 +4,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QGuiApplication
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QSlider, QCheckBox
 from gaming_metrics import CORNERS, percent, fraction, frequency, available_memory, overlay_position
 from qt_fps import FpsPanel
-from qt_theme import BLUE, GREEN, ORANGE, TEXT, MUTED, GRID, card, label, button
+from qt_theme import BLUE, GREEN, ORANGE, TEXT, MUTED, GRID, PANEL, DANGER, SPACE, card, label, button, make_font
 
 
 class Overlay(QWidget):
@@ -50,12 +50,14 @@ class Overlay(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.setPen(QColor(GRID))
-        p.setBrush(QColor(12, 19, 32, self.alpha))
+        background = QColor(PANEL)
+        background.setAlpha(self.alpha)
+        p.setBrush(background)
         p.drawRoundedRect(QRectF(1, 1, self.width()-2, self.height()-2), 12, 12)
-        p.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
+        p.setFont(make_font(13, QFont.Weight.DemiBold))
         p.setPen(QColor(MUTED))
         p.drawText(QRectF(15, 9, 180, 19), Qt.AlignmentFlag.AlignVCenter, "PC MONITOR  /  LIVE")
-        p.setPen(QColor("#ff788c" if self.recording else GREEN))
+        p.setPen(QColor(DANGER if self.recording else GREEN))
         p.drawText(QRectF(197, 9, 98, 19), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
                    "● REC" if self.recording else "● LIVE")
         for i, (name, color, value) in enumerate(zip(("CPU", "GPU 3D", "RAM"), (BLUE, GREEN, ORANGE), self.values)):
@@ -76,11 +78,11 @@ class Overlay(QWidget):
             y = 166 if self.detailed else 140
             p.setPen(QColor(GRID))
             p.drawLine(15, y-3, 295, y-3)
-            p.setFont(QFont("Segoe UI", 16, QFont.Weight.DemiBold))
+            p.setFont(make_font(22, QFont.Weight.DemiBold))
             p.setPen(QColor(GREEN))
             p.drawText(QRectF(15, y+3, 125, 25), Qt.AlignmentFlag.AlignVCenter,
                        f"{stats.fps:.0f} FPS" if stats else "— FPS")
-            p.setFont(QFont("Segoe UI", 9))
+            p.setFont(make_font(12))
             p.setPen(QColor(MUTED))
             low = f"{stats.low:.0f}" if stats and stats.low is not None else "—"
             ms = f"{stats.frametime:.1f}" if stats else "—"
@@ -88,7 +90,7 @@ class Overlay(QWidget):
                        f"1% low  {low} FPS   ·   {ms} ms")
         if self.detailed:
             p.setPen(QColor(MUTED))
-            p.setFont(QFont("Segoe UI", 8))
+            p.setFont(make_font(11))
             p.drawText(QRectF(15, 136, 280, 19), Qt.AlignmentFlag.AlignVCenter,
                        frequency(self.freq) + "   ·   " + available_memory(self.memory))
 
@@ -104,7 +106,7 @@ class GamingPage(QWidget):
         self.enabled = False
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(14)
+        layout.setSpacing(2 * SPACE)
 
         panel, body = card()
         header = QHBoxLayout()
