@@ -130,10 +130,11 @@ class FpsPanel(QWidget):
         for widget in (self.check, self.pick):
             widget.setEnabled(not active)
 
-    def refresh(self):
-        self.update_controls()
-        stats = self.capture.snapshot()
-        if self.isVisible():
+    def refresh(self, visible=True, need_stats=True):
+        if visible:
+            self.update_controls()
+        stats = self.capture.snapshot() if need_stats else None
+        if visible and self.isVisible():
             values = (stats.fps, stats.average_fps, stats.low, stats.frametime) if stats else (None,)*4
             for i, (widget, value) in enumerate(zip(self.values, values)):
                 widget.setText("—" if value is None else f"{value:.1f}" + (" ms" if i == 3 else ""))
