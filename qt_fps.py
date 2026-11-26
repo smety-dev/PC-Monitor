@@ -3,6 +3,7 @@ import psutil
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from qt_theme import card, label, button, BLUE, GREEN, ORANGE
 from qt_pages import Plot
+from qt_dialogs import ErrorDialog
 from process_picker import ProcessPicker
 from presentmon_capture import Capture
 from presentmon_bundle import bundled_exe
@@ -14,6 +15,7 @@ class FpsPanel(QWidget):
         self.capture = Capture(self)
         self.path = bundled_exe()
         self.target = None
+        self.error_dialog = None
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
@@ -48,6 +50,7 @@ class FpsPanel(QWidget):
         self.status.setWordWrap(True)
         body.addWidget(self.status)
         self.capture.changed.connect(self.status.setText)
+        self.capture.failed.connect(self.show_capture_error)
         layout.addWidget(panel)
         row = QHBoxLayout()
         self.values = []
@@ -71,12 +74,26 @@ class FpsPanel(QWidget):
         self.had_graph = False
         self.update_controls()
 
+    def show_capture_error(self, message, details=""):
+        if self.error_dialog is not None:
+            return
+        parent = self.window()
+        self.error_dialog = ErrorDialog(parent, "FPS měření nelze spustit nebo pokračovat",
+                                        message, details)
+        self.error_dialog.finished.connect(self.clear_error_dialog)
+        self.error_dialog.open()
+
+    def clear_error_dialog(self, *_):
+        self.error_dialog = None
+
     def check_module(self):
         self.path = bundled_exe()
         self.binary.setText("PresentMon 2.3.1 • ověřený modul" if self.path else "PresentMon chybí nebo není ověřen")
         self.status.setText("Modul připraven. Vyber hru." if self.path else
                             "Spusť python presentmon_bundle.py v terminálu projektu.")
         self.update_controls()
+        if self.path is None:
+            self.show_capture_error("PresentMon chybí nebo nebylo možné ověřit jeho integritu. Spusť python presentmon_bundle.py.")
 
     def pick_process(self):
         if self.capture.active:
@@ -93,6 +110,7 @@ class FpsPanel(QWidget):
         target = self.target
         if not target or not self.path:
             self.status.setText("Nejdříve připrav modul a vyber herní proces.")
+            self.show_capture_error(self.status.text())
             return
         pid, created = target
         try:
@@ -100,6 +118,7 @@ class FpsPanel(QWidget):
                 raise ValueError("Proces byl nahrazen.")
         except (psutil.Error, OSError, ValueError):
             self.status.setText("Proces již neběží. Vyber jej znovu.")
+            self.show_capture_error(self.status.text())
             return
         self.capture.start(pid)
         self.update_controls()
@@ -131,4 +150,6 @@ class FpsPanel(QWidget):
         return stats
 
     def shutdown(self):
+        if self.error_dialog is not None:
+            self.error_dialog.reject()
         self.capture.stop()
