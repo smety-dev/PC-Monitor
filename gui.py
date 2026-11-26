@@ -9,6 +9,8 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from version import __version__
 from hardware_metrics import Sampler
+from process_metrics import ProcessSampler
+from process_ui import ProcessPage
 from dashboard_ui import (
     BG, PANEL, TRACK, TEXT, MUTED, BLUE, ORANGE, GREEN, FONT,
     Gauge, ScrollPage, card, label, configure_style,
@@ -16,6 +18,7 @@ from dashboard_ui import (
 
 gpu_usage = None
 advanced_sample = None
+process_rows = None
 hardware_name = None
 history = [deque(maxlen=60) for _ in range(3)]
 stop = threading.Event()
@@ -86,6 +89,17 @@ def advanced_worker():
         stop.wait(2)
 
 
+def process_worker():
+    global process_rows
+    sampler = ProcessSampler()
+    while not stop.is_set():
+        try:
+            process_rows = sampler.sample()
+        except (OSError, psutil.Error, NotImplementedError):
+            process_rows = None
+        stop.wait(2)
+
+
 def hardware_worker():
     global hardware_name
     hardware_name = get_hardware()
@@ -118,9 +132,11 @@ page_host.pack(fill="both", expand=True)
 pages = {}
 buttons = {}
 active_page = "Přehled"
-for name in ("Přehled", "Procesor", "Disky", "Síť"):
+for name in ("Přehled", "Procesor", "Disky", "Síť", "Procesy"):
     if name == "Přehled":
         pages[name] = tk.Frame(page_host, bg=BG)
+    elif name == "Procesy":
+        pages[name] = ProcessPage(page_host)
     else:
         pages[name] = ScrollPage(page_host)
 
@@ -133,9 +149,11 @@ def show_page(name):
                                fg=BLUE if key == name else TEXT)
     pages[name].pack(fill="both", expand=True)
     heading.configure(text={"Přehled": "Přehled systému", "Procesor": "Procesor",
-                            "Disky": "Úložiště", "Síť": "Síťový provoz"}[name])
+                            "Disky": "Úložiště", "Síť": "Síťový provoz", "Procesy": "Správce procesů"}[name])
     if name == "Přehled":
         graph_canvas.draw_idle()
+    elif name == "Procesy":
+        pages[name].set_rows(process_rows)
 
 for name in pages:
     button = tk.Button(sidebar, text=name, anchor="w", padx=16, pady=11,
@@ -295,6 +313,8 @@ def update():
         line.set_data(range(1-len(series), 1), list(series))
     if active_page == "Přehled":
         graph_canvas.draw_idle()
+    elif active_page == "Procesy":
+        pages["Procesy"].set_rows(process_rows)
     else:
         update_details(advanced_sample)
     root.after(1000, update)
@@ -306,7 +326,7 @@ def close():
 
 
 root.protocol("WM_DELETE_WINDOW", close)
-for worker in (gpu_worker, advanced_worker, hardware_worker):
+for worker in (gpu_worker, advanced_worker, hardware_worker, process_worker):
     threading.Thread(target=worker, daemon=True).start()
 psutil.cpu_percent()
 show_page("Přehled")
