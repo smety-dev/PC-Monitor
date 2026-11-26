@@ -6,7 +6,7 @@ from qt_pages import Plot
 from qt_dialogs import ErrorDialog
 from process_picker import ProcessPicker
 from presentmon_capture import Capture
-from presentmon_bundle import bundled_exe
+from presentmon_bundle import bundled_exe, FROZEN
 
 
 class FpsPanel(QWidget):
@@ -46,7 +46,9 @@ class FpsPanel(QWidget):
         row.addWidget(self.stop_button)
         row.addStretch()
         body.addLayout(row)
-        self.status = label("Vyber běžící hru." if self.path else "Vývojová kopie: spusť python presentmon_bundle.py a zkontroluj modul.", "muted")
+        self.missing_hint = ("Modul chybí nebo je poškozen. Rozbal znovu celý balíček PC Monitor." if FROZEN else
+                             "Spusť python presentmon_bundle.py v terminálu projektu.")
+        self.status = label("Vyber běžící hru." if self.path else self.missing_hint, "muted")
         self.status.setWordWrap(True)
         body.addWidget(self.status)
         self.capture.changed.connect(self.status.setText)
@@ -92,11 +94,10 @@ class FpsPanel(QWidget):
     def check_module(self):
         self.path = bundled_exe()
         self.binary.setText("PresentMon 2.3.1 • ověřený modul" if self.path else "PresentMon chybí nebo není ověřen")
-        self.status.setText("Modul připraven. Vyber hru." if self.path else
-                            "Spusť python presentmon_bundle.py v terminálu projektu.")
+        self.status.setText("Modul připraven. Vyber hru." if self.path else self.missing_hint)
         self.update_controls()
         if self.path is None:
-            self.show_capture_error("PresentMon chybí nebo nebylo možné ověřit jeho integritu. Spusť python presentmon_bundle.py.")
+            self.show_capture_error(self.missing_hint)
 
     def pick_process(self):
         if self.capture.active:

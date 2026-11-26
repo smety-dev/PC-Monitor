@@ -149,7 +149,7 @@ class Monitor:
                 return None
             child = subprocess.Popen(
                 ["powershell", "-NoProfile", "-NonInteractive", "-Command", command],
-                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
                 errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             self.children.add(child)
             return child

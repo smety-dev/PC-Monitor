@@ -1,12 +1,14 @@
 """Explicit developer setup and source distribution build for PresentMon 2.3.1."""
 import argparse
 import hashlib
+import sys
 from pathlib import Path
 from urllib.request import urlopen
 from zipfile import ZipFile, ZIP_DEFLATED
 from version import __version__
 
-ROOT = Path(__file__).resolve().parent
+FROZEN = bool(getattr(sys, "frozen", False))
+ROOT = Path(sys.executable).resolve().parent if FROZEN else Path(__file__).resolve().parent
 TOOLS = ROOT / "tools"
 EXE_NAME = "PresentMon-2.3.1-x64.exe"
 EXE = TOOLS / EXE_NAME
@@ -22,7 +24,7 @@ RUNTIME_FILES = (
     "presentmon_capture.py", "presentmon_bundle.py", "presentmon_errors.py", "frame_metrics.py",
     "hardware_metrics.py", "process_metrics.py", "performance_logger.py",
     "performance_analysis.py", "version.py", "requirements.txt", "README.md",
-    "CHANGELOG.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
+    "CHANGELOG.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "app_identity.py",
 )
 
 
@@ -47,6 +49,8 @@ def download(url, limit):
 
 
 def prepare():
+    if FROZEN:
+        raise RuntimeError("Use the source checkout to prepare PresentMon.")
     TOOLS.mkdir(exist_ok=True)
     if not verified_binary():
         binary = download(URL, 5_000_000)

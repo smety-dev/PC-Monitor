@@ -7,7 +7,7 @@ from frame_metrics import FrameStream
 from gaming_benchmark import BenchmarkRecorder, MAX_ROWS
 from diagnostics import LOG
 
-from presentmon_bundle import bundled_exe
+from presentmon_bundle import bundled_exe, FROZEN
 from presentmon_errors import capture_error
 
 
@@ -53,7 +53,8 @@ class Capture(QObject):
             return
         exe = bundled_exe()
         if exe is None:
-            self.report_failure("PresentMon není připraven. Spusť python presentmon_bundle.py.")
+            self.report_failure("PresentMon chybí nebo není ověřen. Rozbal znovu celý balíček PC Monitor." if FROZEN else
+                                "PresentMon není připraven. Spusť python presentmon_bundle.py.")
             return
         self.exe = str(exe.resolve())
         self.session = "PCMonitor-" + uuid.uuid4().hex
