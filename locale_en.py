@@ -266,6 +266,7 @@ EN = {
     "Disk ": "Disk ",
     "Proces byl nahrazen.": "Process was replaced.",
     "Detail": "Details",
+    "Obnovit nastavení": "Reset",
     "Benchmark již běží nebo má neplatnou délku.": "Benchmark is already running or has an invalid duration.",
     "Soubor není benchmark CSV z PC Monitoru.": "File is not a PC Monitor benchmark CSV.",
     "Benchmark překročil limit 500 000 snímků.": "Benchmark exceeds the 500,000-frame limit.",
