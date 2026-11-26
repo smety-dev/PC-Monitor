@@ -265,5 +265,14 @@ EN = {
     "CPU celkem": "Total CPU",
     "Disk ": "Disk ",
     "Proces byl nahrazen.": "Process was replaced.",
-    "Detail": "Details"
+    "Detail": "Details",
+    "Benchmark již běží nebo má neplatnou délku.": "Benchmark is already running or has an invalid duration.",
+    "Soubor není benchmark CSV z PC Monitoru.": "File is not a PC Monitor benchmark CSV.",
+    "Benchmark překročil limit 500 000 snímků.": "Benchmark exceeds the 500,000-frame limit.",
+    "Neplatný řádek benchmarku.": "Invalid benchmark row.",
+    "Neplatné číselné hodnoty benchmarku.": "Invalid numeric benchmark values.",
+    "Neplatný frametime nebo čas benchmarku.": "Invalid frametime or benchmark time.",
+    "Příliš mnoho swap chainů.": "Too many swap chains.",
+    "Čas snímků není rostoucí.": "Frame timestamps are not increasing.",
+    "Benchmark neobsahuje žádné snímky.": "Benchmark contains no frames."
 }
