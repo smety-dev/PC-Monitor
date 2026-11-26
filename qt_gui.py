@@ -190,7 +190,8 @@ class Window(QMainWindow):
         self.gaming.refresh(basic, self.monitor.gpu, self.monitor.advanced, recording)
         self.live.setText("●  Záznam probíhá" if recording else
                           "●  Gaming Mode" if self.gaming.enabled else "●  Živé měření")
-        self.render_page()
+        if not self.isMinimized():
+            self.render_page()
 
     def render_page(self):
         index = self.stack.currentIndex()
