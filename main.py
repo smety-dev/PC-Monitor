@@ -1,5 +1,6 @@
 
 import psutil
+from version import __version__
 import subprocess
 
 def get_gpu_usage():
@@ -33,7 +34,7 @@ while True:
     subprocess.run("cls", shell=True)
 
     print("PC Monitor")
-    print("Verze 0.4")
+    print(f"Verze {__version__} (legacy CLI)")
     print("-------------------")
 
     print("Vytizeni CPU:", cpu, "%")
