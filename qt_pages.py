@@ -10,30 +10,46 @@ from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QComboBox,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QFileDialog,
     QAbstractScrollArea, QApplication)
+from matplotlib import rcParams, font_manager
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-from qt_theme import card, label, button, PANEL, TEXT, MUTED, BLUE, GREEN, ORANGE, GRID
+from qt_theme import card, label, button, PANEL, TEXT, MUTED, BLUE, GREEN, ORANGE, GRID, SPACE
 from process_metrics import filter_sort
 from performance_logger import PerformanceRecorder
 from performance_analysis import read_recording, summarize, utilization_hints
+
+
+def configure_chart_fonts(family):
+    # Matplotlib resolves font files separately from Qt; use an installed family.
+    available = {entry.name for entry in font_manager.fontManager.ttflist}
+    candidates = (family, "Segoe UI", "Inter", "Noto Sans", "DejaVu Sans")
+    rcParams["font.family"] = list(dict.fromkeys(name for name in candidates if name in available)) or ["DejaVu Sans"]
+    rcParams["font.size"] = 10
 
 
 def table(headers):
     t = QTableWidget(0, len(headers))
     t.setHorizontalHeaderLabels(headers)
     t.verticalHeader().hide()
-    t.verticalHeader().setDefaultSectionSize(34)
+    t.verticalHeader().setDefaultSectionSize(36)
     t.setAlternatingRowColors(True)
     t.setShowGrid(False)
     t.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
     t.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
     t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+    t.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+    t.setWordWrap(False)
+    t.setTextElideMode(Qt.TextElideMode.ElideRight)
     return t
 
 
 def populate(t, rows):
     t.setUpdatesEnabled(False)
     try:
+        for j in range(1, t.columnCount()):
+            header = t.horizontalHeaderItem(j)
+            if header is not None:
+                header.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         t.setRowCount(len(rows))
         for i, row in enumerate(rows):
             for j, value in enumerate(row):
@@ -43,6 +59,7 @@ def populate(t, rows):
                     t.setItem(i, j, item)
                 if item.text() != str(value):
                     item.setText(str(value))
+                    item.setToolTip(str(value))
                 if j:
                     item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
     finally:
@@ -95,16 +112,17 @@ class Plot(FigureCanvasQTAgg):
         if layout_key != self._layout_key:
             a.clear()
             a.set_facecolor(PANEL)
-            a.tick_params(colors=MUTED, length=0, pad=6)
-            a.grid(axis="y", color=GRID, alpha=.7)
+            a.tick_params(colors=MUTED, labelsize=9, length=0, pad=7)
+            a.set_axisbelow(True)
+            a.grid(axis="y", color=GRID, alpha=.7, linewidth=.8)
             for spine in a.spines.values():
                 spine.set_visible(False)
-            a.set_xlabel(xlabel, color=MUTED)
-            self._artists = [a.plot([], [], color=color, label=name, linewidth=1.8)[0]
+            a.set_xlabel(xlabel, color=MUTED, fontsize=9, labelpad=8)
+            self._artists = [a.plot([], [], color=color, label=name, linewidth=1.8, solid_capstyle="round", solid_joinstyle="round")[0]
                              for name, color, _ in lines]
             if lines:
                 a.legend(frameon=False, labelcolor=TEXT, loc="lower center",
-                         bbox_to_anchor=(.5, 1.01), ncol=min(3, len(lines)), borderaxespad=0)
+                         bbox_to_anchor=(.5, 1.01), ncol=min(3, len(lines)), borderaxespad=0, fontsize=9)
             else:
                 a.set_xticks([])
                 a.set_yticks([])
@@ -135,7 +153,8 @@ class Processes(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0,0,0,0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2 * SPACE)
         self.search = QLineEdit()
         self.search.setPlaceholderText("Vyhledat proces nebo PID")
         layout.addWidget(self.search)
@@ -179,7 +198,8 @@ class Recording(QWidget):
         super().__init__()
         self.recorder = PerformanceRecorder()
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0,0,0,0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2 * SPACE)
         panel, body = card()
         layout.addWidget(panel)
         body.addWidget(label("Záznam výkonu do CSV", "section"))
@@ -277,7 +297,8 @@ class Analysis(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0,0,0,0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2 * SPACE)
         self.rows = []
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.cancel = Event()
