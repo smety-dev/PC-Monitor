@@ -15,7 +15,7 @@ from logging_ui import LoggingPage
 from analysis_ui import AnalysisPage
 from dashboard_ui import (
     BG, PANEL, TRACK, TEXT, MUTED, BLUE, ORANGE, GREEN, FONT,
-    Gauge, ScrollPage, card, label, configure_style,
+    Gauge, ScrollPage, card, label, configure_style, chart_style, SIDEBAR, HOVER, SELECTED,
 )
 
 gpu_usage = None
@@ -109,21 +109,21 @@ def hardware_worker():
 
 root = tk.Tk()
 root.title(f"PC Monitor v{__version__}")
-root.geometry("1100x760")
+root.geometry("1200x800")
 root.minsize(800, 620)
 root.configure(bg=BG)
 configure_style(root)
 
-sidebar = tk.Frame(root, bg=PANEL, width=170)
+sidebar = tk.Frame(root, bg=SIDEBAR, width=190)
 sidebar.pack(side="left", fill="y")
 sidebar.pack_propagate(False)
-label(sidebar, "PC MONITOR", 14, BLUE, True).pack(anchor="w", padx=16, pady=(24, 4))
-label(sidebar, f"VERSION {__version__}", 9, MUTED).pack(anchor="w", padx=16)
-label(sidebar, "MONITORING", 9, MUTED, True).pack(anchor="w", padx=16, pady=(35, 10))
+label(sidebar, "▰  PC Monitor", 17, TEXT, True, SIDEBAR).pack(anchor="w", padx=18, pady=(24, 4))
+label(sidebar, f"DESKTOP  /  v{__version__}", 9, MUTED, bg=SIDEBAR).pack(anchor="w", padx=16)
+label(sidebar, "MONITORING", 9, MUTED, True, SIDEBAR).pack(anchor="w", padx=16, pady=(35, 10))
 
 main = tk.Frame(root, bg=BG)
-main.pack(side="left", fill="both", expand=True, padx=20, pady=16)
-heading = label(main, "Přehled systému", 23, TEXT, True, BG)
+main.pack(side="left", fill="both", expand=True, padx=24, pady=20)
+heading = label(main, "Přehled systému", 25, TEXT, True, BG)
 heading.pack(anchor="w")
 hardware_label = label(main, "Detekuji hardware…", 10, MUTED, bg=BG,
                        justify="left", wraplength=650)
@@ -151,8 +151,8 @@ def show_page(name):
     active_page = name
     for key, page in pages.items():
         page.pack_forget()
-        buttons[key].configure(bg=TRACK if key == name else PANEL,
-                               fg=BLUE if key == name else TEXT)
+        buttons[key].configure(bg=SELECTED if key == name else SIDEBAR,
+                               fg=BLUE if key == name else MUTED)
     pages[name].pack(fill="both", expand=True)
     heading.configure(text={"Přehled": "Přehled systému", "Procesor": "Procesor",
                             "Disky": "Úložiště", "Síť": "Síťový provoz", "Procesy": "Správce procesů", "Záznam": "Záznam výkonu", "Analýza": "Analýza výkonu"}[name])
@@ -161,14 +161,18 @@ def show_page(name):
     elif name == "Procesy":
         pages[name].set_rows(process_rows)
 
+nav_icons = {"Přehled": "▦", "Procesor": "▣", "Disky": "▤", "Síť": "↔",
+             "Procesy": "≡", "Záznam": "●", "Analýza": "▥"}
 for name in pages:
-    button = tk.Button(sidebar, text=name, anchor="w", padx=16, pady=11,
-                       bg=PANEL, fg=TEXT, activebackground=TRACK,
-                       activeforeground=BLUE, relief="flat", bd=0,
+    button = tk.Button(sidebar, text=f"{nav_icons[name]}    {name}", anchor="w", padx=14, pady=10,
+                       bg=SIDEBAR, fg=MUTED, activebackground=HOVER,
+                       activeforeground=TEXT, relief="flat", bd=0, cursor="hand2",
                        font=(FONT, 11), command=lambda n=name: show_page(n))
-    button.pack(fill="x", padx=8, pady=2)
+    button.pack(fill="x", padx=10, pady=2)
+    button.bind("<Enter>", lambda e, n=name: e.widget.configure(bg=SELECTED if n == active_page else HOVER))
+    button.bind("<Leave>", lambda e, n=name: e.widget.configure(bg=SELECTED if n == active_page else SIDEBAR))
     buttons[name] = button
-label(sidebar, "●  Živé měření", 10, GREEN).pack(side="bottom", anchor="w",
+label(sidebar, "●  Živé měření", 10, GREEN, bg=SIDEBAR).pack(side="bottom", anchor="w",
                                                 padx=15, pady=20)
 
 overview = pages["Přehled"]
@@ -188,17 +192,13 @@ graph_panel.pack(fill="both", expand=True)
 label(graph_panel, "Historie vytížení", 12, TEXT, True).pack(anchor="w", padx=12, pady=(10, 0))
 fig = Figure(figsize=(6, 3), dpi=100, facecolor=PANEL)
 ax = fig.add_subplot(111)
-ax.set_facecolor(PANEL)
+chart_style(ax)
 ax.set_ylim(0, 100)
 ax.set_xlim(-59, 0)
 ax.set_ylabel("%", color=MUTED)
-ax.tick_params(colors=MUTED, labelsize=9)
-ax.grid(color=TRACK, alpha=.65)
-for spine in ax.spines.values():
-    spine.set_color(TRACK)
-graph_lines = [ax.plot([], [], color=color, label=name, linewidth=1.7)[0]
+graph_lines = [ax.plot([], [], color=color, label=name, linewidth=2.0)[0]
                for name, color in (("CPU", BLUE), ("RAM", ORANGE), ("GPU 3D", GREEN))]
-ax.legend(facecolor=PANEL, edgecolor=TRACK, labelcolor=TEXT, loc="upper left")
+ax.legend(frameon=False, labelcolor=TEXT, loc="upper left", ncol=3)
 fig.subplots_adjust(left=.10, right=.97, top=.94, bottom=.13)
 graph_canvas = FigureCanvasTkAgg(fig, master=graph_panel)
 graph_canvas.get_tk_widget().pack(fill="both", expand=True, padx=8, pady=8)
