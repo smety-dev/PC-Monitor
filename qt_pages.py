@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QCo
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QFileDialog, QMessageBox)
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-from qt_theme import card, label, button, BG, PANEL, TEXT, MUTED, BLUE, GREEN, ORANGE, GRID
+from qt_theme import card, label, button, PANEL, TEXT, MUTED, BLUE, GREEN, ORANGE, GRID
 from process_metrics import filter_sort
 from performance_logger import PerformanceRecorder
 from performance_analysis import read_recording, summarize, utilization_hints
