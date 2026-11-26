@@ -309,7 +309,7 @@ class BenchmarkPage(QWidget):
             for name, color, result in present:
                 series = getattr(result, attr)
                 lines.append((name, color, series + (None,) * (length - len(series))))
-            plot.render(x, lines, xlabel="Uplynulý čas (s)")
+            plot.render(x, lines, xlabel="Uplynulý čas (s)", unit="FPS" if attr == "fps_series" else "ms")
 
     def shutdown(self):
         self.closing = True
