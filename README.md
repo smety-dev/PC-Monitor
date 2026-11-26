@@ -2,11 +2,11 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.9.5 — Early development**
+**Current version: v0.9.5 — Public beta candidate**
 
 ## Features
 
-- New Qt desktop interface with custom antialiased gauges, rounded cards, dark navigation and native tables
+- Qt desktop interface with compact metric cards, rolling charts, dark navigation and native tables
 - Real-time CPU and RAM utilization
 - GPU 3D utilization (Windows performance counters, busiest detected 3D engine)
 - Automatic CPU and GPU name detection in the GUI
@@ -25,7 +25,22 @@ A lightweight Windows application for real-time hardware performance monitoring,
 - Lower-overhead background sampling, reusable plot artists and bounded local diagnostics
 - Timed per-frame gaming benchmark CSV recording, stutter analysis and A/B comparison
 
-## Requirements
+## Portable Windows build
+
+The first beta is prepared as a Windows x64 ZIP. Once the build and manual checks pass, extract the entire archive and launch `PC-Monitor.exe`; Python is not needed. The executable is unsigned, so Windows may display a SmartScreen warning. Keep the `_internal` and `tools` directories together with the executable. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for known limitations and third-party licensing details.
+
+For developers, build in a clean Windows x64 Python 3.13 virtual environment:
+
+```powershell
+py -3.13 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements-build.txt
+.venv\Scripts\python.exe -m unittest discover -v
+.venv\Scripts\python.exe build_windows.py
+```
+
+The GitHub Actions Windows beta build performs these steps automatically and uploads the candidate ZIP and SHA-256 checksum, plus a startup screenshot. No automatic release publication or administrator elevation is enabled. Check the actual artifact and bundled licenses before publishing. Build dependencies are separate from the runtime requirements.
+
+## Requirements (source checkout)
 
 - Windows 10 or 11 (compatibility across systems has not been fully tested)
 - Python 3.14 (development version used), with PySide6 (Qt)
