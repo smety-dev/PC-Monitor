@@ -12,6 +12,7 @@ from hardware_metrics import Sampler
 from process_metrics import ProcessSampler
 from process_ui import ProcessPage
 from logging_ui import LoggingPage
+from analysis_ui import AnalysisPage
 from dashboard_ui import (
     BG, PANEL, TRACK, TEXT, MUTED, BLUE, ORANGE, GREEN, FONT,
     Gauge, ScrollPage, card, label, configure_style,
@@ -133,13 +134,15 @@ page_host.pack(fill="both", expand=True)
 pages = {}
 buttons = {}
 active_page = "Přehled"
-for name in ("Přehled", "Procesor", "Disky", "Síť", "Procesy", "Záznam"):
+for name in ("Přehled", "Procesor", "Disky", "Síť", "Procesy", "Záznam", "Analýza"):
     if name == "Přehled":
         pages[name] = tk.Frame(page_host, bg=BG)
     elif name == "Procesy":
         pages[name] = ProcessPage(page_host)
     elif name == "Záznam":
         pages[name] = LoggingPage(page_host)
+    elif name == "Analýza":
+        pages[name] = AnalysisPage(page_host)
     else:
         pages[name] = ScrollPage(page_host)
 
@@ -152,7 +155,7 @@ def show_page(name):
                                fg=BLUE if key == name else TEXT)
     pages[name].pack(fill="both", expand=True)
     heading.configure(text={"Přehled": "Přehled systému", "Procesor": "Procesor",
-                            "Disky": "Úložiště", "Síť": "Síťový provoz", "Procesy": "Správce procesů", "Záznam": "Záznam výkonu"}[name])
+                            "Disky": "Úložiště", "Síť": "Síťový provoz", "Procesy": "Správce procesů", "Záznam": "Záznam výkonu", "Analýza": "Analýza výkonu"}[name])
     if name == "Přehled":
         graph_canvas.draw_idle()
     elif name == "Procesy":
@@ -327,6 +330,7 @@ def update():
 def close():
     stop.set()
     pages["Záznam"].finish()
+    pages["Analýza"].close()
     root.destroy()
 
 
