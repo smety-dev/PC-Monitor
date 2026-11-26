@@ -34,6 +34,7 @@ class UISmokeTests(unittest.TestCase):
         monitor = Mock()
         monitor.basic = (12.5, SimpleNamespace(percent=40.0, total=16*1024**3, available=9.6*1024**3))
         monitor.gpu = 8.0
+        monitor.gpu_names = ("Synthetic GPU",)
         monitor.hardware = "Synthetic CPU · Synthetic GPU"
         monitor.advanced = {"frequency": 3600, "cores": [12.5, 18.0],
                             "disk_rates": (1024**2, 2*1024**2),
@@ -72,6 +73,7 @@ class UISmokeTests(unittest.TestCase):
         self.window.refresh()
         self.assertEqual(self.window.metrics[0].value.text(), "12,5")
         self.assertEqual(self.window.metrics[1].bar.value(), 400)
+        self.assertEqual(self.window.metrics[2].detail.text(), "Synthetic GPU")
         self.assertEqual(self.window.activity_values[0].text(), "1,00 MiB/s")
         self.assertEqual(self.window.activity_values[3].text(), "4,00 MiB/s")
 
