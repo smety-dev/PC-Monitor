@@ -4,22 +4,22 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 
 ## [0.8.4]
 
-### Added — Qt interface
-- New PySide6 desktop shell with custom gauges, rounded cards, native tables and all monitoring, recording and analysis workspaces.
-- Existing Tkinter interface retained as fallback; install updated requirements and launch qt_gui.py.
-- Qt Windows runtime validation pending.
-
-### Changed
-- Unified dark design system, compact metric cards, refined sidebar, styled controls and tables, and analysis KPI cards.
-
 ### Added
+- PySide6 desktop interface with rounded cards, custom gauges, native tables and seven monitoring workspaces.
 - Offline CSV analyzer supporting Czech and original English recordings.
-- Selectable utilization, disk, network, frequency and available-memory charts.
-- Sample statistics and cautious high-utilization hints.
+- Selectable charts, sample statistics and cautious high-utilization hints.
 - Background CSV loading and invalid-value handling.
 
+### Fixed
+- Dark chart placeholder before a recording is loaded.
+
+### Changed
+- `main.py` now launches the Qt application; removed the old Tkinter UI and terminal monitor.
+- Added PySide6 to runtime requirements; retained psutil and matplotlib for monitoring and charts.
+- Added automated version consistency checks.
+
 ### Notes
-- Windows validation pending. No additional dependencies.
+- Initial Qt interface confirmed by the project owner on Windows; final cleanup requires regression testing.
 
 ## [0.8.3]
 
