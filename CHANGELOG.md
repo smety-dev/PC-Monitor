@@ -4,6 +4,12 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 
 ## [0.9.5]
 
+### Release preparation
+- Portable Windows x64 candidate built with PyInstaller onedir, original product icon and executable version metadata.
+- Verified PresentMon bundled alongside the executable, with recovery guidance for packaged users.
+- Windows CI runs regression tests and a packaged startup smoke test before creating the ZIP and SHA-256 checksum.
+- Third-party notices and build dependency manifest included for pre-release review. Actual Windows compatibility, ETW capture and publication remain pending.
+
 ### Changed
 - Unified dark palette, installed modern font selection, chart typography and spacing tokens.
 - One consistent navigation icon tint in all Qt modes and states; scrollable sidebar for smaller windows.
