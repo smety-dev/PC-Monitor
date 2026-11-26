@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.9.0 — Early development**
+**Current version: v0.9.1 — Early development**
 
 ## Features
 
@@ -20,6 +20,7 @@ A lightweight Windows application for real-time hardware performance monitoring,
 - Local performance CSV recording with selectable sampling interval
 - Offline performance analysis with charts and sample statistics
 - Configurable gaming overlay and optional process-sampling suspension
+- Optional PresentMon-based live FPS, frametimes and rolling 1% low
 
 ## Requirements
 
@@ -59,7 +60,17 @@ Open Analýza and load an original PC Monitor CSV file (Czech or older English h
 
 ## Gaming Mode & Overlay
 
-Open Gaming and enable Gaming Mode. Choose a connected monitor, corner, background opacity and optional CPU frequency/available RAM details. The click-through, non-activating overlay is a separate always-on-top desktop window, with live CPU, GPU 3D, RAM and recording status. It does not inject into games or alter their files. Use windowed or borderless fullscreen mode; exclusive fullscreen and some game/compositor or anti-cheat configurations may hide or disallow desktop overlays. Disable Gaming Mode from the main window (Alt+Tab if necessary); closing the application closes the overlay. Optionally suspend process sampling during play; this resumes on exit from Gaming Mode. The usual hardware sampling and CSV recording continue. No FPS, frame times or temperatures are measured, and performance improvements are not guaranteed. No administrator rights or new runtime dependencies are required. Overlay settings are session-only.
+Open Gaming and enable Gaming Mode. Choose a connected monitor, corner, background opacity and optional CPU frequency/available RAM details. The click-through, non-activating overlay is a separate always-on-top desktop window, with live CPU, GPU 3D, RAM and recording status. It does not inject into games or alter their files. Use windowed or borderless fullscreen mode; exclusive fullscreen and some game/compositor or anti-cheat configurations may hide or disallow desktop overlays. Disable Gaming Mode from the main window (Alt+Tab if necessary); closing the application closes the overlay. Optionally suspend process sampling during play; this resumes on exit from Gaming Mode. The usual hardware sampling and CSV recording continue. Frame metrics are available through the optional PresentMon capture below; temperatures are not measured and performance improvements are not guaranteed. Gaming Mode itself does not require administrator rights. Overlay settings are session-only.
+
+## FPS & frametime capture (optional)
+
+1. Download the official **console binary** [PresentMon-2.3.1-x64.exe](https://github.com/GameTechDev/PresentMon/releases/download/v2.3.1/PresentMon-2.3.1-x64.exe) (not the GUI installer). This version is the integration target; other versions are not validated. Select it in Gaming → Měření snímků using Vybrat EXE, or place it in `tools/PresentMon-2.3.1-x64.exe` beside the source. The executable is not bundled or downloaded automatically.
+2. Start your game, click Obnovit procesy and choose its actual game process (not the launcher) by name and PID.
+3. Click Spustit FPS měření. Enable Gaming Mode if you want the FPS metrics in the overlay. Stop capture with Zastavit měření or close PC Monitor.
+
+The capture uses the official console application's CSV stdout stream with legacy metrics, a private ETW session, and a selected PID. [PresentMon documentation](https://github.com/GameTechDev/PresentMon/blob/v2.3.1/README-ConsoleApplication.md). No injection or changes to game files. ETW access can be restricted on some systems; use only with authorized permissions, and check the status message if capture fails. No automatic elevation is requested.
+
+FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second window; average FPS uses the recent ten-second window. The 1% low is 1000 divided by the mean interval of the slowest ceil(1% of N) frames in that ten-second window (at least 100 frames). The dominant swap chain by recent present count is selected instead of combining chains. These are present-rate metrics, not displayed FPS, input latency, or an explicit frame-generation measurement. A gap in received data of more than three seconds clears live values. The chart displays the most recent 120 frames; the rolling buffer is bounded to 12,000 frames per swap chain. Capture runs independently of Gaming Mode and the existing hardware CSV recorder; FPS/frametimes are not yet stored in that CSV or its offline analyzer. No extra pip packages are required. Windows capture and game compatibility require practical validation.
 
 ## Testing
 
@@ -67,7 +78,7 @@ Open Gaming and enable Gaming Mode. Choose a connected monitor, corner, backgrou
 python -m unittest discover -v
 ```
 
-Run the application and exercise all eight pages after installing requirements. The automated tests cover monitoring, CSV logic, overlay helpers and version metadata consistency.
+Run the application and exercise all eight pages after installing requirements. The automated tests cover monitoring, CSV logic, overlay helpers, frame metric calculations and version metadata consistency.
 
 ## Versioning
 
@@ -76,7 +87,7 @@ The application version is defined in [`version.py`](version.py) and displayed b
 ## Planned features
 
 - CPU and GPU temperatures
-- Actual FPS and frametime measurement
+- Frame metrics in recording and offline analysis
 - Standalone executable
 
 ## About
