@@ -1,5 +1,6 @@
 """Background system sampling shared by the Qt pages."""
 import math
+import os
 import threading
 import subprocess
 import time
@@ -11,16 +12,43 @@ from pc_monitor.core.diagnostics import LOG
 
 GPU_COMMAND = r"""
 $ErrorActionPreference = 'Stop'
-Get-Counter '\GPU Engine(*engtype_3D)\Utilization Percentage' -SampleInterval 2 -Continuous |
-ForEach-Object {
-    $value = $_.CounterSamples |
-        Group-Object { $_.InstanceName -replace '^pid_\d+_', '' } |
-        ForEach-Object { ($_.Group | Measure-Object -Property CookedValue -Sum).Sum } |
-        Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
-    if ($null -ne $value) {
-        [Console]::WriteLine(([double]$value).ToString([Globalization.CultureInfo]::InvariantCulture))
-    } else {
+function Write-GpuSample($samples, $nameProperty, $valueProperty) {
+    $totals = @{}
+    foreach ($sample in $samples) {
+        $name = $sample.$nameProperty
+        $value = $sample.$valueProperty
+        if ($name -match '_engtype_3D$' -and $null -ne $value -and
+            $value -ge 0 -and -not [double]::IsInfinity($value)) {
+            $engine = $name -replace '^pid_\d+_', ''
+            $totals[$engine] += [double]$value
+        }
+    }
+    if ($totals.Count -eq 0) {
         [Console]::WriteLine('N/A')
+        return
+    }
+    $maximum = 0.0
+    foreach ($total in $totals.Values) {
+        $maximum = [Math]::Max($maximum, $total)
+    }
+    [Console]::WriteLine($maximum.ToString([Globalization.CultureInfo]::InvariantCulture))
+}
+
+try {
+    Get-Counter '\GPU Engine(*)\Utilization Percentage' -SampleInterval 2 -Continuous |
+        ForEach-Object { Write-GpuSample $_.CounterSamples InstanceName CookedValue }
+} catch {
+    [Console]::WriteLine('GPU_ERROR: Get-Counter: ' + ($_.Exception.Message -replace '\s+', ' '))
+    # WMI class and property names do not depend on localized counter names.
+    try {
+        while ($true) {
+            $samples = Get-CimInstance -ClassName Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine
+            Write-GpuSample $samples Name UtilizationPercentage
+            Start-Sleep -Seconds 2
+        }
+    } catch {
+        [Console]::WriteLine('GPU_ERROR: WMI: ' + ($_.Exception.Message -replace '\s+', ' '))
+        exit 1
     }
 }
 """
@@ -147,10 +175,14 @@ class Monitor:
         with self.child_lock:
             if self.stop_event.is_set():
                 return None
+            env = os.environ.copy()
+            # Windows PowerShell must discover its own modules when launched from PowerShell 7.
+            env.pop("PSMODULEPATH", None)
+            env.pop("PSModulePath", None)
             child = subprocess.Popen(
                 ["powershell", "-NoProfile", "-NonInteractive", "-Command", command],
                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
-                errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), env=env)
             self.children.add(child)
             return child
 
@@ -192,6 +224,7 @@ Get-CimInstance Win32_VideoController | ForEach-Object { 'GPU: ' + $_.Name }
     def gpu_worker(self):
         # One continuous counter session instead of repeatedly launching PowerShell.
         delay = 2
+        reported_errors = set()
         while not self.stop_event.is_set():
             child = None
             received = False
@@ -202,8 +235,17 @@ Get-CimInstance Win32_VideoController | ForEach-Object { 'GPU: ' + $_.Name }
                 for line in child.stdout:
                     if self.stop_event.is_set():
                         break
-                    self._gpu_sample = (gpu_value(line), time.monotonic())
-                    received = True
+                    if line.startswith("GPU_ERROR: "):
+                        message = line.removeprefix("GPU_ERROR: ").strip()
+                        if message not in reported_errors:
+                            LOG.warning("GPU counter: %s", message)
+                            reported_errors.add(message)
+                        continue
+                    value = gpu_value(line)
+                    self._gpu_sample = (value, time.monotonic())
+                    if value is not None:
+                        received = True
+                        reported_errors.clear()
                 if not self.stop_event.is_set():
                     LOG.warning("GPU counter stream ended; retrying")
             except (OSError, subprocess.SubprocessError):
