@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from datetime import datetime
 from pathlib import Path
-from dashboard_ui import BG, PANEL, TRACK, TEXT, MUTED, BLUE, GREEN, FONT, card, label
+from dashboard_ui import BG, PANEL, TRACK, TEXT, MUTED, BLUE, GREEN, FONT, card, label, action
 from performance_logger import PerformanceRecorder
 
 
@@ -21,15 +21,13 @@ class LoggingPage(tk.Frame):
         self.interval_box.pack(anchor="w", padx=16, pady=8)
         controls = tk.Frame(panel, bg=PANEL)
         controls.pack(fill="x", padx=16, pady=12)
-        self.start_button = tk.Button(controls, text="Spustit záznam", command=self.start,
-                                      bg=BLUE, fg="#0d1117", relief="flat", font=(FONT, 11, "bold"))
+        self.start_button = action(controls, "Spustit záznam", self.start)
         self.start_button.pack(side="left", ipadx=12, ipady=6)
-        self.stop_button = tk.Button(controls, text="Zastavit", command=self.finish,
-                                     bg=TRACK, fg=TEXT, relief="flat", font=(FONT, 11))
+        self.stop_button = action(controls, "Zastavit", self.finish, primary=False)
         self.stop_button.pack(side="left", padx=10, ipadx=12, ipady=6)
         self.status = label(panel, "Připraveno", 14, MUTED, True)
         self.status.pack(anchor="w", padx=16, pady=6)
-        self.stats = label(panel, "0 vzorků", 12)
+        self.stats = label(panel, "0 vzorků", 22, TEXT, True)
         self.stats.pack(anchor="w", padx=16, pady=6)
         self.path_label = label(panel, "Soubor zatím nebyl vybrán", 10, MUTED,
                                 wraplength=520, justify="left")
