@@ -1,7 +1,7 @@
 """FPS capture panel shared with the gaming workspace."""
 import psutil
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
-from qt_theme import card, label, button, BLUE, GREEN, ORANGE
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout
+from qt_theme import card, label, button, BLUE, GREEN, ORANGE, SPACE
 from qt_pages import Plot
 from qt_dialogs import ErrorDialog
 from process_picker import ProcessPicker
@@ -18,7 +18,7 @@ class FpsPanel(QWidget):
         self.error_dialog = None
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(12)
+        layout.setSpacing(2 * SPACE)
         panel, body = card()
         body.addWidget(label("Měření snímků / PresentMon", "section"))
         row = QHBoxLayout()
@@ -52,16 +52,19 @@ class FpsPanel(QWidget):
         self.capture.changed.connect(self.status.setText)
         self.capture.failed.connect(self.show_capture_error)
         layout.addWidget(panel)
-        row = QHBoxLayout()
+        row = QGridLayout()
+        row.setSpacing(SPACE)
         self.values = []
-        for title, color in (("FPS / 1 s", GREEN), ("Průměr / 10 s", BLUE), ("1% Low / 10 s", ORANGE), ("Frametime / 1 s", BLUE)):
+        for i, (title, color) in enumerate((("FPS / 1 s", GREEN), ("Průměr / 10 s", BLUE), ("1% Low / 10 s", ORANGE), ("Frametime / 1 s", BLUE))):
             panel, body = card()
-            body.addWidget(label(title, "muted"))
+            body.addWidget(label(title, "metric"))
             value = label("—", "value")
             value.setStyleSheet("color: " + color)
             body.addWidget(value)
             self.values.append(value)
-            row.addWidget(panel, 1)
+            row.addWidget(panel, i // 2, i % 2)
+        row.setColumnStretch(0, 1)
+        row.setColumnStretch(1, 1)
         layout.addLayout(row)
         panel, body = card()
         body.addWidget(label("Frametime • posledních 120 snímků", "section"))
