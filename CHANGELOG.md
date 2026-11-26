@@ -4,6 +4,11 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 
 ## [0.8.4]
 
+### Added — Qt interface
+- New PySide6 desktop shell with custom gauges, rounded cards, native tables and all monitoring, recording and analysis workspaces.
+- Existing Tkinter interface retained as fallback; install updated requirements and launch qt_gui.py.
+- Qt Windows runtime validation pending.
+
 ### Changed
 - Unified dark design system, compact metric cards, refined sidebar, styled controls and tables, and analysis KPI cards.
 
