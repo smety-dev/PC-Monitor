@@ -2,6 +2,19 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.8.1]
+
+### Changed
+- Modern dark dashboard with sidebar navigation and circular utilization gauges.
+- Dedicated CPU, disk and network pages with visual meters instead of a text dump.
+- Responsive chart and scrollable hardware pages.
+- Hardware name detection moved to a background thread.
+- GPU polling pause increased to two seconds to reduce process overhead.
+
+### Notes
+- Existing monitoring backend retained; no additional dependencies or elevation requested.
+- Windows UI validation pending.
+
 ## [0.8.0]
 
 ### Added
@@ -12,7 +25,7 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 
 ### Notes
 - Based on v0.6.2; v0.7.0 temperature work remains experimental in a separate branch and is not included.
-- Windows runtime validation is pending.
+- Windows runtime, throughput and unit tests were confirmed by the project owner.
 
 ## [0.6.2]
 
