@@ -14,7 +14,7 @@ DURATIONS = (30, 60, 120, 300)
 MAX_ROWS = 500_000
 MAX_CHAINS = 256
 MAX_SECONDS = 300
-CHAIN_PATTERN = re.compile(r"[a-zA-Z0-9_-]{1,64}")
+CHAIN_PATTERN = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}")
 
 
 def valid_frame(chain, ms):
@@ -75,8 +75,8 @@ class BenchmarkRecorder:
         elapsed = timestamp - self.origin
         if not 0 <= elapsed <= self.duration or self.count >= MAX_ROWS:
             return
-        self.buffer.append((format(elapsed, ".9f").replace(".", ","), chain,
-                            format(ms, ".9g").replace(".", ",")))
+        self.buffer.append((format(elapsed, ".17g").replace(".", ","), chain,
+                            format(ms, ".17g").replace(".", ",")))
         self.count += 1
         if len(self.buffer) >= 256:
             self.write_buffer()
