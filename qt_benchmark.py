@@ -97,7 +97,7 @@ class BenchmarkPage(QWidget):
         self.analysis_status.setWordWrap(True)
         body.addWidget(self.analysis_status)
         self.t = table(["Metrika", "A", "B", "B proti A"])
-        self.t.setMinimumHeight(425)
+        self.t.setMinimumHeight(465)
         body.addWidget(self.t)
         layout.addWidget(panel)
         panel, body = card()
@@ -107,7 +107,7 @@ class BenchmarkPage(QWidget):
         body.addWidget(label("Frametime / maximum v každé sekundě (ms)", "section"))
         self.peak_plot = Plot()
         body.addWidget(self.peak_plot)
-        note = label("Stutter = frametime nejméně 33,333 ms a současně nejméně 2× medián daného měření. Špičky ≥ 50 ms jsou uvedeny zvlášť. Jde o orientační indikaci, nikoli důkaz konkrétní příčiny. Statistika používá pouze dominantní swap chain.", "muted")
+        note = label("Stutter = frametime nejméně 33,333 ms a současně nejméně 2× medián daného měření. Špičky ≥ 50 ms jsou uvedeny zvlášť. Jde o orientační indikaci, nikoli důkaz konkrétní příčiny. Statistika používá pouze dominantní swap chain (nejvíce vzorků); porovnej také podíl snímků ≥ 50 ms, který má stejný práh v obou měřeních.", "muted")
         note.setWordWrap(True)
         body.addWidget(note)
         layout.addWidget(panel)
@@ -216,6 +216,7 @@ class BenchmarkPage(QWidget):
             ("Podíl stutterů", "stutter_percent", " %", 2, "points"),
             ("Práh stutteru", "threshold_ms", " ms", 2, None),
             ("Snímky ≥ 50 ms", "severe", "", 0, None),
+            ("Podíl snímků ≥ 50 ms", "severe_percent", " %", 2, "points"),
             ("Snímky (dominantní / celkem)", "count", "", 0, None),
             ("Časový rozsah", "span", " s", 1, None),
         ):
