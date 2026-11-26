@@ -174,7 +174,7 @@ class Plot(FigureCanvasQTAgg):
             a.xaxis.set_major_locator(MaxNLocator(nbins=5))
             a.yaxis.set_major_locator(MaxNLocator(nbins=4))
             a.yaxis.set_major_formatter(FuncFormatter(lambda v, _: decimal(f"{v:g}") + ("%" if percentage else "")))
-            a.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}".replace(".", ",")))
+            a.xaxis.set_major_formatter(FuncFormatter(lambda v, _: decimal(f"{v:g}")))
             if percentage:
                 a.yaxis.set_major_locator(FixedLocator([0, 25, 50, 75, 100]))
             if rolling_seconds:
