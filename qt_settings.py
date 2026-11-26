@@ -1,5 +1,6 @@
 """Settings workspace using the shared PC Monitor design system."""
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QDialog
+from i18n import tr
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QDialog, QComboBox
 from qt_theme import card, label, button, ORANGE, SPACE
 from version import __version__
 
@@ -13,12 +14,23 @@ class SettingsPage(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2 * SPACE)
         panel, body = card()
-        body.addWidget(label("Spuštění a okno", "section"))
-        hint = label("Zvol, jak se má aplikace chovat při příštím spuštění.", "muted")
+        body.addWidget(label(tr("Jazyk / Language"), "section"))
+        self.language = QComboBox()
+        for name, code in ((tr("Systémový jazyk / System language"), "auto"), ("Čeština", "cs"), ("English", "en")):
+            self.language.addItem(name, code)
+        body.addWidget(self.language)
+        language_hint = label(tr("Změna jazyka se projeví při příštím spuštění aplikace."), "muted")
+        language_hint.setWordWrap(True)
+        body.addWidget(language_hint)
+        layout.addWidget(panel)
+        self.language.currentIndexChanged.connect(self.save_language)
+        panel, body = card()
+        body.addWidget(label(tr("Spuštění a okno"), "section"))
+        hint = label(tr("Zvol, jak se má aplikace chovat při příštím spuštění."), "muted")
         hint.setWordWrap(True)
         body.addWidget(hint)
-        self.remember_page = QCheckBox("Otevřít naposledy používanou sekci")
-        self.remember_geometry = QCheckBox("Zapamatovat velikost a pozici okna")
+        self.remember_page = QCheckBox(tr("Otevřít naposledy používanou sekci"))
+        self.remember_geometry = QCheckBox(tr("Zapamatovat velikost a pozici okna"))
         for control in (self.remember_page, self.remember_geometry):
             body.addWidget(control)
         layout.addWidget(panel)
@@ -26,14 +38,14 @@ class SettingsPage(QWidget):
         self.remember_geometry.toggled.connect(self.save_startup)
 
         panel, body = card()
-        body.addWidget(label("Monitoring a herní režim", "section"))
-        hint = label("Nastavení overlaye, monitoru, průhlednosti, úsporného režimu a intervalu CSV se ukládají automaticky v příslušných sekcích.", "muted")
+        body.addWidget(label(tr("Monitoring a herní režim"), "section"))
+        hint = label(tr("Nastavení overlaye, monitoru, průhlednosti, úsporného režimu a intervalu CSV se ukládají automaticky v příslušných sekcích."), "muted")
         hint.setWordWrap(True)
         body.addWidget(hint)
         row = QHBoxLayout()
-        gaming = button("Nastavení Gaming")
+        gaming = button(tr("Nastavení Gaming"))
         gaming.clicked.connect(open_gaming)
-        recording = button("Nastavení záznamu")
+        recording = button(tr("Nastavení záznamu"))
         recording.clicked.connect(open_recording)
         row.addWidget(gaming)
         row.addWidget(recording)
@@ -42,29 +54,37 @@ class SettingsPage(QWidget):
         layout.addWidget(panel)
 
         panel, body = card()
-        body.addWidget(label("Výchozí nastavení", "section"))
-        hint = label("Obnoví preference aplikace. Záznamy CSV ani soubory PresentMonu se nemažou.", "muted")
+        body.addWidget(label(tr("Výchozí nastavení"), "section"))
+        hint = label(tr("Obnoví preference aplikace. Záznamy CSV ani soubory PresentMonu se nemažou."), "muted")
         hint.setWordWrap(True)
         body.addWidget(hint)
-        self.reset_button = button("Obnovit výchozí nastavení")
+        self.reset_button = button(tr("Obnovit výchozí nastavení"))
         self.reset_button.setStyleSheet("color: " + ORANGE)
         self.reset_button.clicked.connect(self.confirm_reset)
         row = QHBoxLayout()
         row.addWidget(self.reset_button)
         row.addStretch()
         body.addLayout(row)
-        self.status = label("Nastavení se ukládá místně pro aktuálního uživatele.", "muted")
+        self.status = label(tr("Nastavení se ukládá místně pro aktuálního uživatele."), "muted")
         self.status.setWordWrap(True)
         body.addWidget(self.status)
         layout.addWidget(panel)
         panel, body = card()
         body.addWidget(label("PC Monitor  /  v" + __version__, "section"))
-        body.addWidget(label("Qt · lokální nastavení · MIT licence projektu", "muted"))
+        body.addWidget(label(tr("Qt · lokální nastavení · MIT licence projektu"), "muted"))
         layout.addWidget(panel)
         layout.addStretch()
         self.load()
 
+    def save_language(self, *_):
+        self.prefs.set("ui/language", self.language.currentData())
+        self.prefs.sync()
+        self.status.setText(tr("Jazyk uložen. Restartuj aplikaci, až budeš mít hotová měření."))
+
     def load(self):
+        self.language.blockSignals(True)
+        self.language.setCurrentIndex(self.language.findData(self.prefs.get("ui/language")))
+        self.language.blockSignals(False)
         for widget, key in ((self.remember_page, "startup/remember_page"),
                             (self.remember_geometry, "startup/remember_geometry")):
             widget.blockSignals(True)
@@ -85,14 +105,14 @@ class SettingsPage(QWidget):
         layout = QVBoxLayout(dialog)
         panel, body = card()
         layout.addWidget(panel)
-        body.addWidget(label("Obnovit výchozí nastavení?", "section"))
-        message = label("Uložené preference budou nahrazeny výchozími hodnotami. CSV a PresentMon zůstanou beze změny.", "muted")
+        body.addWidget(label(tr("Obnovit výchozí nastavení?"), "section"))
+        message = label(tr("Uložené preference budou nahrazeny výchozími hodnotami. CSV a PresentMon zůstanou beze změny."), "muted")
         message.setWordWrap(True)
         body.addWidget(message)
         row = QHBoxLayout()
-        cancel = button("Zrušit")
+        cancel = button(tr("Zrušit"))
         cancel.clicked.connect(dialog.reject)
-        confirm = button("Obnovit", True)
+        confirm = button(tr("Obnovit nastavení"), True)
         confirm.clicked.connect(dialog.accept)
         row.addStretch()
         row.addWidget(cancel)
@@ -102,6 +122,6 @@ class SettingsPage(QWidget):
         if dialog.exec():
             if self.reset_callback():
                 self.load()
-                self.status.setText("Výchozí nastavení obnoveno.")
+                self.status.setText(tr("Výchozí nastavení obnoveno."))
             else:
-                self.status.setText("Nejprve zastav aktivní CSV záznam.")
+                self.status.setText(tr("Nejprve zastav aktivní CSV záznam."))

@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Guide for v0.9.5 — First Public Beta**
+**Guide for v0.9.6 — International Update candidate**
 
 ## Features
 
@@ -87,7 +87,7 @@ Open Gaming and enable Gaming Mode. Choose a connected monitor, corner, backgrou
 2. Start your game, click Vybrat hru / aplikaci and search for its actual process (not the launcher) by name, window title or PID. The default filter shows processes with visible titled windows; enable the checkbox to include background processes, and use Obnovit to refresh the list.
 3. Click Spustit FPS měření. Enable Gaming Mode if you want the FPS metrics in the overlay. Stop capture with Zastavit měření or close PC Monitor.
 
-The capture uses the official console application's CSV stdout stream with legacy metrics, a private ETW session, and a selected PID. [PresentMon documentation](https://github.com/GameTechDev/PresentMon/blob/v2.3.1/README-ConsoleApplication.md). No injection or changes to game files. ETW access can be restricted on some systems; use only with authorized permissions, and check the status message if capture fails. No automatic elevation is requested. Confirmed ETW access-denied errors are explained in a themed Qt dialog in Czech, with expandable/copyable diagnostic details; on a managed PC request access from IT, or use an authorized administrator account on a personal PC. Other monitoring functions remain available.
+The capture uses the official console application's CSV stdout stream with legacy metrics, a private ETW session, and a selected PID. [PresentMon documentation](https://github.com/GameTechDev/PresentMon/blob/v2.3.1/README-ConsoleApplication.md). No injection or changes to game files. ETW access can be restricted on some systems; use only with authorized permissions, and check the status message if capture fails. No automatic elevation is requested. Confirmed ETW access-denied errors are explained in a themed Qt dialog in the selected application language, with expandable/copyable diagnostic details; on a managed PC request access from IT, or use an authorized administrator account on a personal PC. Other monitoring functions remain available.
 
 FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second window; average FPS uses the recent ten-second window. The 1% low is 1000 divided by the mean interval of the slowest ceil(1% of N) frames in that ten-second window (at least 100 frames). The dominant swap chain by recent present count is selected instead of combining chains. These are present-rate metrics, not displayed FPS, input latency, or an explicit frame-generation measurement. A gap in received data of more than three seconds clears live values. The chart displays the most recent 120 frames; the rolling buffer is bounded to 12,000 frames per swap chain. Capture runs independently of Gaming Mode and the existing hardware CSV recorder; FPS/frametimes are recorded separately through the Benchmark workspace; the existing hardware CSV format is unchanged. No extra pip packages are required. Windows capture and game compatibility require practical validation.
 
@@ -97,7 +97,11 @@ FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second wind
 python presentmon_bundle.py --package
 ```
 
-The script creates `dist/PC-Monitor-v0.9.5-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
+The script creates `dist/PC-Monitor-v0.9.6-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
+
+## Interface language
+
+Open Nastavení / Settings and choose System language, Čeština or English. The default uses Czech for a Czech system locale and English for other system locales. The selection is saved immediately and applies on next launch; finish active measurements before restarting. Native Windows file dialogs and external system diagnostics can retain their original language. Both CSV schemas are unchanged, including Czech headers and decimal commas.
 
 ## Settings & preferences
 

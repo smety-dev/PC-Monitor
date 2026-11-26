@@ -49,6 +49,15 @@ class PreferencesTests(unittest.TestCase):
         self.assertEqual(normalize("startup/last_page", "Gaming"), "Gaming")
         self.assertEqual(normalize("overlay/monitor", None), "")
 
+    def test_language_preference(self):
+        store = MemoryStore()
+        prefs = Preferences(store)
+        self.assertEqual(prefs.get("ui/language"), "auto")
+        prefs.set("ui/language", "en")
+        self.assertEqual(Preferences(store).get("ui/language"), "en")
+        prefs.set("ui/language", "invalid")
+        self.assertEqual(prefs.get("ui/language"), "auto")
+
     def test_storage_roundtrip(self):
         store = MemoryStore()
         prefs = Preferences(store)

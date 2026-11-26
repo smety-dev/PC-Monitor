@@ -1,4 +1,4 @@
-# PC Monitor v0.9.5 — First Public Beta candidate
+# PC Monitor v0.9.6 — International Update candidate
 
 ## Run on Windows x64
 Extract the entire archive to a local writable directory and open **PC-Monitor.exe**.
@@ -9,9 +9,10 @@ The application is unsigned; Windows SmartScreen may display a warning. Only dow
 - CPU, RAM, GPU 3D, storage, network and process monitoring.
 - Live charts, local CSV recording and offline analysis.
 - Gaming overlay, PresentMon FPS and timed A/B benchmarks.
-- Persistent local preferences and a Czech desktop interface.
+- Persistent local preferences and Czech/English language selection. Settings apply after restarting the application; the default follows the system language (Czech or English fallback).
 
 ## Known limitations
+- Native file dialogs and raw system/PresentMon diagnostics may retain their original language. CSV headers and numeric formats remain compatible with v0.9.5.
 - Beta software. Actual game FPS capture and clean-machine compatibility require manual validation.
 - FPS capture requires Windows ETW permissions; the program does not request elevation.
 - The overlay may not appear over exclusive fullscreen games.

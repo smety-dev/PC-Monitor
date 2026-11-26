@@ -16,14 +16,15 @@
 
 <p align="center">
   <a href="https://github.com/smety-dev/PC-Monitor/releases/tag/v0.9.5"><strong>Download for Windows</strong></a> ·
+  <a href="https://smety-dev.github.io/PC-Monitor/">Website</a> ·
   <a href="GUIDE.md">User &amp; developer guide</a> ·
   <a href="ROADMAP.md">Roadmap</a> ·
   <a href="https://github.com/smety-dev/PC-Monitor/issues">Feedback</a>
 </p>
 
-**Current version: v0.9.5 — First Public Beta**
+**Current version: v0.9.6 — International Update (release candidate)**
 
-PC Monitor brings hardware telemetry, process inspection, recording and gaming benchmarks into one dark desktop workspace. The portable release runs without installing Python. The current interface is primarily Czech.
+PC Monitor brings hardware telemetry, process inspection, recording and gaming benchmarks into one dark desktop workspace. The portable release runs without installing Python. The v0.9.6 candidate offers Czech and English, with automatic system-language selection and a saved choice in Settings. Restart the application to apply a language change. The existing v0.9.5 download is primarily Czech.
 
 <p align="center"><img src="docs/assets/dashboard-demo.svg" alt="PC Monitor dashboard illustration with simulated activity" width="100%"></p>
 
@@ -40,9 +41,11 @@ PC Monitor brings hardware telemetry, process inspection, recording and gaming b
 | Gaming overlay | Configurable desktop overlay with hardware and optional frame metrics |
 | FPS & frametime | PresentMon-based present-rate FPS, rolling 1% low and frametime history |
 | Benchmark | Timed frame capture, stutter metrics and A/B comparison |
-| Settings | Persistent local preferences and overlay configuration |
+| Settings | Persistent local preferences, overlay configuration and language choice (v0.9.6 candidate) |
 
 ## Download & run
+
+The published beta remains v0.9.5 until the v0.9.6 candidate is validated and released.
 
 1. Open the [v0.9.5 release](https://github.com/smety-dev/PC-Monitor/releases/tag/v0.9.5).
 2. Download `PC-Monitor-v0.9.5-Windows-x64.zip` from **Assets**.
@@ -59,6 +62,7 @@ No Python installation is required for the portable build. The executable is uns
 - PresentMon requires authorized ETW access. Desktop overlays may not appear in exclusive fullscreen.
 - GPU readings represent detected 3D engine utilization, not total GPU load or VRAM.
 - Temperature monitoring is not included. No telemetry is uploaded by the application.
+- Language selection affects application UI, not CSV schemas; native OS dialogs and external diagnostics may retain their original language.
 - See [release notes](https://github.com/smety-dev/PC-Monitor/releases/tag/v0.9.5) and [third-party notices](THIRD_PARTY_NOTICES.md) for limitations. Redistribution license review remains open.
 
 ## Develop from source

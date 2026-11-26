@@ -9,11 +9,11 @@ This is a proposal, not a promise of dates or version numbers.
 - Process inspection, CSV recording and offline analysis
 - Gaming overlay, PresentMon capture and frame benchmarks
 
-## Next planned release: v0.9.6 — International Update
+## In validation: v0.9.6 — International Update
 
-- [ ] English and Czech interface translations, including dialogs, charts and overlay
-- [ ] Language selection with system-language fallback and saved preference
-- [ ] Preserve existing CSV compatibility and test both languages
+- [x] English and Czech interface translations, including dialogs, charts and overlay
+- [x] Language selection with system-language fallback and saved preference
+- [ ] Verify both languages in the Windows release candidate; CSV schemas retained
 
 ## Reliability and feedback
 

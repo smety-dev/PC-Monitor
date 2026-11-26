@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QApplication
 
 from gaming_benchmark import analyze_benchmark, create_demo
 from preferences import Preferences, PAGES
+from i18n import set_language
 from qt_gui import Window
 from qt_pages import configure_chart_fonts
 from qt_theme import configure_theme, navigation_icon, NAV_ICONS, preferred_font
@@ -31,6 +32,9 @@ class UISmokeTests(unittest.TestCase):
         self.addCleanup(folder.cleanup)
         self.folder = Path(folder.name)
         prefs = Preferences(QSettings(str(self.folder / "test.ini"), QSettings.Format.IniFormat))
+        prefs.set("ui/language", "cs")
+        self.prefs = prefs
+        self.addCleanup(set_language, "cs")
         monitor = Mock()
         monitor.basic = (12.5, SimpleNamespace(percent=40.0, total=16*1024**3, available=9.6*1024**3))
         monitor.gpu = 8.0
@@ -42,6 +46,7 @@ class UISmokeTests(unittest.TestCase):
                             "drives": [("C:", 20*1024**3, 100*1024**3, 20)]}
         monitor.processes = []
         monitor.gaming = Event()
+        self.monitor = monitor
         with patch("qt_gui.Monitor", return_value=monitor), patch("qt_gui.Preferences", return_value=prefs):
             self.window = Window()
         self.window.timer.stop()
@@ -67,6 +72,44 @@ class UISmokeTests(unittest.TestCase):
         self.window.open_overlay()
         self.assertEqual(self.window.gaming.tabs.currentIndex(), 1)
         self.assertEqual(self.window.benchmark.tabs.count(), 3)
+
+    def test_english_workspace(self):
+        self.close_window()
+        self.prefs.set("ui/language", "en")
+        with patch("qt_gui.Monitor", return_value=self.monitor):
+            self.window = Window(prefs=self.prefs)
+        self.window.timer.stop()
+        self.window.show()
+        self.window.navigate(0)
+        self.window.refresh()
+        self.assertEqual(self.window.title.text(), "System overview")
+        self.assertEqual(self.window.group.button(0).text(), "Overview")
+        self.assertEqual(self.window.metrics[0].value.text(), "12.5")
+        self.assertEqual(self.window.activity_values[0].text(), "1.00 MiB/s")
+        self.assertEqual(self.window.gaming.corner.currentData(), self.prefs.get("overlay/corner"))
+        self.assertEqual(self.window.gaming.corner.currentText(), "Top right")
+        self.assertEqual(self.window.gaming.tabs.tabText(0), "FPS capture")
+        self.assertEqual(self.window.benchmark.tabs.tabText(1), "A/B results")
+        self.assertEqual(self.window.analysis.group.itemText(0), "Utilization (%)")
+        self.assertEqual(self.window.analysis.group.currentData(), "Vytížení (%)")
+        page = self.window.benchmark
+        for i, improved in enumerate((False, True)):
+            path = self.folder / f"english-{i}.csv"
+            create_demo(path, improved)
+            page.results[i] = analyze_benchmark(path)
+        page.render()
+        self.assertIn("Average FPS", page.comparison_summary.text())
+        self.assertEqual(page.t.item(0, 0).text(), "Average FPS")
+        self.assertEqual(self.window.plot.ax.xaxis.get_major_formatter()(0), "Now")
+        for index in range(len(PAGES)):
+            self.window.navigate(index)
+            self.window.refresh()
+        self.assertEqual(self.prefs.get("startup/last_page"), "Nastavení")
+        self.assertEqual(self.window.title.text(), "Application settings")
+        self.window.settings_page.language.setCurrentIndex(
+            self.window.settings_page.language.findData("cs"))
+        self.assertEqual(self.prefs.get("ui/language"), "cs")
+        self.assertEqual(self.window.title.text(), "Application settings")
 
     def test_overview_values(self):
         self.window.navigate(0)

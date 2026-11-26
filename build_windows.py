@@ -88,8 +88,9 @@ def build():
     shutil.copy2(NOTICE, tools / NOTICE.name)
     if not verified_binary(tools / EXE.name):
         raise RuntimeError("Packaged PresentMon hash mismatch")
-    for name in ("README.md", "LICENSE", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "RELEASE_NOTES.md"):
+    for name in ("README.md", "LICENSE", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "RELEASE_NOTES.md", "GUIDE.md", "ROADMAP.md"):
         shutil.copy2(ROOT / name, APP / name)
+    shutil.copytree(ROOT / "docs" / "assets", APP / "docs" / "assets")
     collect_notices()
 
     marker = WORK / "smoke.txt"
