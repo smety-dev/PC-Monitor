@@ -14,6 +14,7 @@ from qt_gaming import GamingPage
 from qt_benchmark import BenchmarkPage
 from qt_settings import SettingsPage
 from preferences import Preferences
+from i18n import tr, set_language, decimal
 from qt_pages import Processes, Recording, Analysis, Plot, fmt, configure_chart_fonts
 from version import __version__
 from app_identity import app_icon
@@ -35,7 +36,7 @@ def scroll(widget):
 
 
 def rate(value):
-    return "— MiB/s" if value is None else f"{value/1024**2:.2f}".replace(".", ",") + " MiB/s"
+    return "— MiB/s" if value is None else decimal(f"{value/1024**2:.2f}") + " MiB/s"
 
 
 class Window(QMainWindow):
@@ -45,6 +46,7 @@ class Window(QMainWindow):
         self.resize(1250,820)
         self.setMinimumSize(900,650)
         self.prefs = prefs if prefs is not None else Preferences()
+        set_language(self.prefs.get("ui/language"))
         self.monitor = Monitor()
         self.history = deque(maxlen=61)
         root = QWidget()
@@ -82,13 +84,13 @@ class Window(QMainWindow):
         header = QHBoxLayout()
         heading = QVBoxLayout()
         heading.setSpacing(4)
-        self.title = label("Přehled systému", "title")
+        self.title = label(tr("Přehled systému"), "title")
         heading.addWidget(self.title)
         self.subtitle = label("", "subtitle")
         self.subtitle.setWordWrap(True)
         heading.addWidget(self.subtitle)
         header.addLayout(heading, 1)
-        self.header_status = label("● Načítám", "status")
+        self.header_status = label(tr("● Načítám"), "status")
         header.addWidget(self.header_status, 0, Qt.AlignmentFlag.AlignTop)
         body.addLayout(header)
         self.stack = QStackedWidget()
@@ -115,35 +117,35 @@ class Window(QMainWindow):
             ("Nastavení","Nastavení aplikace",scroll(self.settings_page),"settings"),
         ]
         self.descriptions = (
-            "Aktuální vytížení a provoz počítače na jednom místě.",
-            "Frekvence a vytížení jednotlivých logických procesorů.",
-            "Kapacita disků a rychlost čtení a zápisu.",
-            "Aktuální příjem a odesílání dat.",
-            "Najdi procesy, které nejvíce zatěžují počítač.",
-            "Ulož průběh vytížení do souboru pro pozdější analýzu.",
-            "Prozkoumej uložený záznam hardwarového výkonu.",
-            "Měř FPS nebo zobraz výkon přímo při hraní.",
-            "Změř a porovnej plynulost hry před a po změně nastavení.",
-            "Přizpůsob chování aplikace svým potřebám.",
+            tr("Aktuální vytížení a provoz počítače na jednom místě."),
+            tr("Frekvence a vytížení jednotlivých logických procesorů."),
+            tr("Kapacita disků a rychlost čtení a zápisu."),
+            tr("Aktuální příjem a odesílání dat."),
+            tr("Najdi procesy, které nejvíce zatěžují počítač."),
+            tr("Ulož průběh vytížení do souboru pro pozdější analýzu."),
+            tr("Prozkoumej uložený záznam hardwarového výkonu."),
+            tr("Měř FPS nebo zobraz výkon přímo při hraní."),
+            tr("Změř a porovnej plynulost hry před a po změně nastavení."),
+            tr("Přizpůsob chování aplikace svým potřebám."),
         )
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
         for i,(name,title,widget,icon) in enumerate(self.views):
             if i == 5:
                 nav.addSpacing(2 * SPACE)
-                nav.addWidget(label("MĚŘENÍ", "eyebrow"))
+                nav.addWidget(label(tr("MĚŘENÍ"), "eyebrow"))
             elif i == 7:
                 nav.addSpacing(SPACE)
-                nav.addWidget(label("HRANÍ", "eyebrow"))
+                nav.addWidget(label(tr("HRANÍ"), "eyebrow"))
             elif i == 9:
                 nav.addSpacing(SPACE)
             self.stack.addWidget(widget)
-            item = button(name)
+            item = button(tr(name))
             item.setObjectName("nav")
             item.setIcon(navigation_icon(icon))
             item.setIconSize(QSize(20, 20))
             item.setFixedHeight(40)
-            item.setAccessibleName(name)
+            item.setAccessibleName(tr(name))
             item.setCheckable(True)
             self.group.addButton(item,i)
             item.clicked.connect(lambda checked=False,index=i:self.navigate(index))
@@ -164,19 +166,19 @@ class Window(QMainWindow):
         widget, layout = page()
         row = QHBoxLayout()
         row.setSpacing(SPACE * 2)
-        self.metrics = [MetricCard("Procesor", BLUE), MetricCard("Paměť RAM", ORANGE),
-                        MetricCard("Grafika · 3D", GREEN)]
+        self.metrics = [MetricCard(tr("Procesor"), BLUE), MetricCard(tr("Paměť RAM"), ORANGE),
+                        MetricCard(tr("Grafika · 3D"), GREEN)]
         for item in self.metrics:
             row.addWidget(item, 1)
         layout.addLayout(row)
         panel, body = card()
         heading = QHBoxLayout()
-        heading.addWidget(label("Vytížení v čase", "section"))
+        heading.addWidget(label(tr("Vytížení v čase"), "section"))
         heading.addStretch()
         heading.addWidget(label("60 s", "eyebrow"))
         self.history_filter = QComboBox()
-        self.history_filter.addItems(["Všechny metriky", "CPU", "RAM", "GPU"])
-        self.history_filter.setAccessibleName("Zobrazené metriky grafu")
+        self.history_filter.addItems([tr("Všechny metriky"), "CPU", "RAM", "GPU"])
+        self.history_filter.setAccessibleName(tr("Zobrazené metriky grafu"))
         self.history_filter.currentIndexChanged.connect(lambda *_: self.render_page())
         heading.addWidget(self.history_filter)
         body.addLayout(heading)
@@ -188,14 +190,14 @@ class Window(QMainWindow):
         row.setSpacing(SPACE * 2)
         self.activity_values = []
         for title, captions, index in (
-            ("Diskový provoz", ("Čtení", "Zápis"), 2),
-            ("Síťový provoz", ("Příjem", "Odesílání"), 3),
+            (tr("Diskový provoz"), (tr("Čtení"), tr("Zápis")), 2),
+            (tr("Síťový provoz"), (tr("Příjem"), tr("Odesílání")), 3),
         ):
             panel, body = card()
             header = QHBoxLayout()
             header.addWidget(label(title, "section"))
             header.addStretch()
-            detail = button("Detail")
+            detail = button(tr("Detail"))
             detail.clicked.connect(lambda checked=False, target=index: self.navigate(target))
             header.addWidget(detail)
             body.addLayout(header)
@@ -211,9 +213,9 @@ class Window(QMainWindow):
         layout.addLayout(row)
         panel, body = card()
         header = QHBoxLayout()
-        header.addWidget(label("Informace o zařízení", "section"))
+        header.addWidget(label(tr("Informace o zařízení"), "section"))
         header.addStretch()
-        self.hardware = label("Detekuji hardware…", "muted")
+        self.hardware = label(tr("Detekuji hardware…"), "muted")
         self.hardware.setWordWrap(True)
         body.addLayout(header)
         body.addWidget(self.hardware)
@@ -223,13 +225,13 @@ class Window(QMainWindow):
     def cpu_page(self):
         widget,layout = page()
         panel,body = card()
-        body.addWidget(label("Frekvence procesoru","section"))
+        body.addWidget(label(tr("Frekvence procesoru"),"section"))
         self.freq = label("N/A","value")
         body.addWidget(self.freq)
-        body.addWidget(label(f"{psutil.cpu_count(logical=False)} fyzických jader / {psutil.cpu_count()} vláken · frekvence hlášená OS","muted"))
+        body.addWidget(label(tr(f"{psutil.cpu_count(logical=False)} fyzických jader / {psutil.cpu_count()} vláken · frekvence hlášená OS"),"muted"))
         layout.addWidget(panel)
         panel,body = card()
-        body.addWidget(label("Logické procesory","section"))
+        body.addWidget(label(tr("Logické procesory"),"section"))
         self.core_grid = QGridLayout()
         self.core_grid.setSpacing(16)
         body.addLayout(self.core_grid)
@@ -241,10 +243,10 @@ class Window(QMainWindow):
     def disk_page(self):
         widget,layout = page()
         panel,body = card()
-        body.addWidget(label("Celkový diskový provoz","section"))
+        body.addWidget(label(tr("Celkový diskový provoz"),"section"))
         self.disk_rate = [label("—", "value"), label("—", "value")]
         rates = QHBoxLayout()
-        for title, value in zip(("Čtení", "Zápis"), self.disk_rate):
+        for title, value in zip((tr("Čtení"), tr("Zápis")), self.disk_rate):
             column = QVBoxLayout()
             column.addWidget(label(title, "metric"))
             column.addWidget(value)
@@ -261,7 +263,7 @@ class Window(QMainWindow):
         widget,layout = page()
         row = QHBoxLayout()
         self.net = []
-        for name,color in (("PŘÍJEM",BLUE),("ODESÍLÁNÍ",GREEN)):
+        for name,color in ((tr("PŘÍJEM"),BLUE),(tr("ODESÍLÁNÍ"),GREEN)):
             panel,body = card()
             body.addWidget(label(name,"muted"))
             value = label("N/A","value")
@@ -318,15 +320,15 @@ class Window(QMainWindow):
         self.monitor.set_process_visible(index == 4 and not self.isMinimized())
         self.prefs.set("startup/last_page", self.views[index][0])
         self.prefs.sync()
-        self.title.setText(self.views[index][1])
+        self.title.setText(tr(self.views[index][1]))
         self.subtitle.setText(self.descriptions[index])
         if hasattr(self,"timer"):
             self.render_page()
 
     def refresh(self):
         self.monitor.set_process_visible(self.stack.currentIndex() == 4 and not self.isMinimized())
-        if self.hardware.text() != self.monitor.hardware:
-            self.hardware.setText(self.monitor.hardware)
+        if self.hardware.text() != tr(self.monitor.hardware):
+            self.hardware.setText(tr(self.monitor.hardware))
         basic = self.monitor.basic
         if basic is not None:
             cpu,ram = basic
@@ -340,8 +342,8 @@ class Window(QMainWindow):
         self.benchmark.refresh(self.stack.currentIndex() == 8 and not self.isMinimized())
         benchmarking = self.gaming.fps.capture.benchmark.active
         self.gaming.refresh(basic, self.monitor.gpu, self.monitor.advanced, recording or benchmarking, not self.isMinimized())
-        state = ("● Benchmark probíhá" if benchmarking else "● Záznam probíhá" if recording else
-                 "● Herní režim" if self.gaming.enabled else "● Živé měření" if basic is not None else "● Načítám")
+        state = (tr("● Benchmark probíhá") if benchmarking else tr("● Záznam probíhá") if recording else
+                 tr("● Herní režim") if self.gaming.enabled else tr("● Živé měření") if basic is not None else tr("● Načítám"))
         if self.header_status.text() != state:
             self.header_status.setText(state)
         color = DANGER if recording or benchmarking else GREEN if basic is not None else MUTED
@@ -357,17 +359,17 @@ class Window(QMainWindow):
         sample = self.monitor.advanced or {}
         if index == 0 and basic is not None:
             cpu,ram = basic
-            self.metrics[0].set_value(cpu,f"{psutil.cpu_count(logical=False)} jader / {psutil.cpu_count()} vláken")
-            self.metrics[1].set_value(ram.percent, f"{ram.available/1024**3:.1f} GiB volných z {ram.total/1024**3:.1f} GiB")
+            self.metrics[0].set_value(cpu,tr(f"{psutil.cpu_count(logical=False)} jader / {psutil.cpu_count()} vláken"))
+            self.metrics[1].set_value(ram.percent, tr(f"{ram.available/1024**3:.1f} GiB volných z {ram.total/1024**3:.1f} GiB"))
             gpu = self.monitor.gpu
             names = self.monitor.gpu_names
             gpu_card = self.metrics[2]
-            gpu_card.set_value(gpu, gpu_description(names))
-            tooltip = "\n".join(names) if names else "Název grafické karty se nepodařilo zjistit."
+            gpu_card.set_value(gpu, tr(gpu_description(names)))
+            tooltip = "\n".join(names) if names else tr("Název grafické karty se nepodařilo zjistit.")
             if len(names) > 1:
-                tooltip += "\nVytížení nejvytíženější 3D jednotky; konkrétní adaptér není rozlišen."
+                tooltip += "\n" + tr("Vytížení nejvytíženější 3D jednotky; konkrétní adaptér není rozlišen.")
             if gpu is None:
-                tooltip += "\nData o vytížení GPU nejsou dostupná."
+                tooltip += "\n" + tr("Data o vytížení GPU nejsou dostupná.")
             if gpu_card.toolTip() != tooltip:
                 gpu_card.setToolTip(tooltip)
             gpu_card.detail.setToolTip(tooltip)
@@ -425,7 +427,7 @@ class Window(QMainWindow):
             for mount,used,total,percent in drives:
                 if mount not in self.drive_widgets:
                     panel,body = card()
-                    body.addWidget(label("Disk "+mount,"section"))
+                    body.addWidget(label(tr("Disk ")+mount,"section"))
                     val = label("","muted")
                     body.addWidget(val)
                     bar = QProgressBar()
@@ -442,7 +444,7 @@ class Window(QMainWindow):
         elif index == 4:
             if self.monitor.gaming.is_set():
                 self.processes.refresh(None)
-                self.processes.status.setText("Sběr procesů pozastaven (Gaming Mode)")
+                self.processes.status.setText(tr("Sběr procesů pozastaven (Gaming Mode)"))
             else:
                 self.processes.refresh(self.monitor.processes)
 
