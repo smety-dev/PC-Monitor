@@ -2,6 +2,17 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.9.1]
+
+### Added
+- Optional official PresentMon 2.3.1 console integration with selected process/PID and private ETW session.
+- Live present-rate FPS, rolling average, 1% low, frametime chart and overlay metrics.
+- Bounded per-swap-chain frame buffers, dominant-chain selection, stale-data handling and seven unit tests.
+
+### Notes
+- PresentMon executable must be obtained separately. No new pip dependencies. Windows ETW permissions and runtime compatibility require validation.
+- Hardware CSV format is unchanged; frame metrics are live only. Present rate is not displayed FPS.
+
 ## [0.9.0]
 
 ### Added
@@ -12,7 +23,7 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 
 ### Notes
 - No new runtime dependencies. Windowed/borderless games are the intended use; exclusive fullscreen and anti-cheat compatibility are not guaranteed.
-- FPS, frametimes and temperatures are not measured. Windows overlay runtime validation pending.
+- FPS, frametimes and temperatures were not measured in this release. Overlay operation confirmed by the project owner on Windows.
 
 ## [0.8.4]
 
