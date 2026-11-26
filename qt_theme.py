@@ -2,20 +2,20 @@
 from PySide6.QtCore import Qt, QRectF, QByteArray
 from PySide6.QtGui import QColor, QPainter, QPen, QFont, QFontDatabase, QIcon, QPixmap, QPalette
 from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtWidgets import QApplication, QWidget, QFrame, QLabel, QVBoxLayout, QPushButton
+from PySide6.QtWidgets import QApplication, QWidget, QFrame, QLabel, QVBoxLayout, QHBoxLayout, QProgressBar, QPushButton
 from string import Template
 
 # Shared color, typography and spacing tokens. Metric hues are semantic, not navigation hues.
-BG = "#0b101a"
-PANEL = "#141d2b"
-SIDEBAR = "#101724"
-SURFACE = "#192536"
-RAISED = "#223149"
-BORDER = "#29384e"
-GRID = "#263549"
+BG = "#0d1117"
+PANEL = "#161c25"
+SIDEBAR = "#10151d"
+SURFACE = "#1b2430"
+RAISED = "#222d3b"
+BORDER = "#2b3747"
+GRID = "#293544"
 TEXT = "#edf2fb"
-MUTED = "#9caec7"
-SUBTLE = "#8193af"
+MUTED = "#aebdd0"
+SUBTLE = "#91a1b7"
 BLUE = "#83a8ff"
 GREEN = "#45dcb5"
 ORANGE = "#ffc078"
@@ -25,20 +25,26 @@ NAV_SELECTED = "#243650"
 NAV_TEXT = "#d9e6ff"
 DISABLED = "#718097"
 SPACE = 8
-CARD_RADIUS = 14
+CARD_RADIUS = 12
 
 STYLE = Template("""
-QWidget { color: $TEXT; }
+QWidget { color: $TEXT; font-size: 14px; }
+QWidget#workspace { background: $BG; }
+QLabel[role="subtitle"] { font-size: 13px; color: $MUTED; }
+QLabel[role="stat"] { font-size: 34px; font-weight: 600; }
+QLabel[role="unit"] { font-size: 15px; color: $MUTED; font-weight: 500; }
+QLabel[role="status"] { font-size: 12px; font-weight: 600; }
+QFrame#divider { background: $BORDER; max-height: 1px; border: 0; }
 QMainWindow, QDialog, QStackedWidget { background: $BG; }
 QFrame#sidebar { background: $SIDEBAR; border-right: 1px solid $BORDER; }
 QWidget#navContent, QScrollArea#navScroll, QWidget#navViewport { background: $SIDEBAR; }
 QFrame#card { background: $PANEL; border: 1px solid $BORDER; border-radius: ${CARD_RADIUS}px; }
 QFrame#card QLabel, QFrame#sidebar QLabel { background: transparent; }
-QLabel[role="muted"] { color: $MUTED; font-size: 12px; }
+QLabel[role="muted"] { color: $MUTED; font-size: 13px; }
 QLabel[role="eyebrow"] { color: $SUBTLE; font-size: 11px; font-weight: 600; }
 QLabel[role="brand"] { font-size: 21px; font-weight: 700; color: $TEXT; }
 QLabel[role="title"] { font-size: 28px; font-weight: 600; }
-QLabel[role="section"] { font-size: 15px; font-weight: 600; }
+QLabel[role="section"] { font-size: 16px; font-weight: 600; }
 QLabel[role="value"] { font-size: 28px; font-weight: 600; }
 QLabel[role="metric"] { color: $MUTED; font-size: 12px; font-weight: 600; }
 QPushButton { background: $RAISED; border: 1px solid $BORDER; border-radius: 9px; padding: 9px 14px; font-weight: 600; }
@@ -105,7 +111,7 @@ def configure_theme(app):
     app.setStyle("Fusion")
     family = preferred_font()
     font = QFont(family)
-    font.setPixelSize(13)
+    font.setPixelSize(14)
     app.setFont(font)
     palette = QPalette()
     for role, color in (
@@ -186,53 +192,52 @@ def button(text, primary=False):
     return obj
 
 
-class Ring(QWidget):
-    def __init__(self, color):
-        super().__init__()
-        self.color = color
-        self.value = None
-        self.setMinimumHeight(122)
-
-    def set_value(self, value):
-        if self.value != value:
-            self.value = value
-            self.update()
-
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        size = min(self.width()-24, self.height()-20)
-        if size <= 0:
-            return
-        rect = QRectF((self.width()-size)/2, (self.height()-size)/2, size, size)
-        pen = QPen(QColor(GRID), 9)
-        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        p.setPen(pen)
-        p.drawArc(rect, 225*16, -270*16)
-        if self.value is not None:
-            pen.setColor(QColor(self.color))
-            p.setPen(pen)
-            p.drawArc(rect, 225*16, -int(270*16*max(0,min(100,self.value))/100))
-        p.setPen(QColor(TEXT))
-        p.setFont(make_font(29, QFont.Weight.DemiBold))
-        p.drawText(rect, Qt.AlignmentFlag.AlignCenter,
-                   "N/A" if self.value is None else f"{self.value:.1f}%")
-
-
 class MetricCard(QFrame):
-    def __init__(self, name, color):
+    """Large value and compact utilization bar; no animated gauges."""
+    def __init__(self, name, color, unit="%", show_bar=True):
         super().__init__()
         self.setObjectName("card")
+        self.color = color
+        self.unit = unit
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(2 * SPACE, 2 * SPACE, 2 * SPACE, 2 * SPACE)
-        layout.setSpacing(SPACE)
-        layout.addWidget(label(name, "metric"))
-        self.ring = Ring(color)
-        layout.addWidget(self.ring)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(8)
+        header = QHBoxLayout()
+        header.addWidget(label(name, "metric"))
+        header.addStretch()
+        layout.addLayout(header)
+        reading = QHBoxLayout()
+        reading.setSpacing(5)
+        self.value = label("—", "stat")
+        self.unit_label = label(unit, "unit")
+        reading.addWidget(self.value)
+        reading.addWidget(self.unit_label, 0, Qt.AlignmentFlag.AlignBottom)
+        reading.addStretch()
+        layout.addLayout(reading)
+        self.bar = QProgressBar()
+        self.bar.setRange(0, 1000)
+        self.bar.setTextVisible(False)
+        self.bar.setFixedHeight(6)
+        self.bar.setStyleSheet("QProgressBar::chunk { background: " + color + "; }")
+        self.bar.setVisible(show_bar)
+        layout.addWidget(self.bar)
         self.detail = label("Čekám na data", "muted")
         self.detail.setWordWrap(True)
         layout.addWidget(self.detail)
+        layout.addStretch()
 
     def set_value(self, value, detail):
-        self.ring.set_value(value)
-        self.detail.setText(detail)
+        text = "—" if value is None else f"{value:.1f}".replace(".", ",")
+        if self.value.text() != text:
+            self.value.setText(text)
+        self.bar.setValue(0 if value is None else int(max(0, min(100, value)) * 10))
+        if self.detail.text() != detail:
+            self.detail.setText(detail)
+        self.setToolTip(detail)
+
+    def set_reading(self, value, detail):
+        if self.value.text() != value:
+            self.value.setText(value)
+        if self.detail.text() != detail:
+            self.detail.setText(detail)
+        self.setToolTip(detail)
