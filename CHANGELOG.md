@@ -4,6 +4,10 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 
 ## [0.8.2]
 
+### Fixed
+- Keep process table headings readable when hovered or pressed.
+- Exclude the Windows System Idle Process (PID 0) from CPU consumers.
+
 ### Added
 - Read-only process manager with live CPU usage, RAM working set and PID.
 - Search by name or PID and sortable columns.
