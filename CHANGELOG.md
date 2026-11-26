@@ -2,6 +2,17 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.8.3]
+
+### Added
+- Recording page with start/stop controls, file selection, duration and sample count.
+- Local CSV export of system utilization, CPU frequency and aggregate disk/network rates.
+- Selectable 1, 2, 5 or 10 second interval, exclusive file creation and flush after each row.
+- Recording continues across pages and closes on application exit.
+
+### Notes
+- Windows runtime validation pending; no new dependencies.
+
 ## [0.8.2]
 
 ### Fixed
@@ -14,7 +25,7 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 - Background process sampling with unavailable values and PID reuse handling.
 
 ### Notes
-- Windows runtime validation pending; no new dependencies or administrator rights requested.
+- Windows UI and eight unit tests confirmed by the project owner.
 
 ## [0.8.1]
 
