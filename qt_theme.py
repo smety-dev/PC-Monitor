@@ -1,53 +1,127 @@
 """Shared Qt visual components."""
 from PySide6.QtCore import Qt, QRectF, QByteArray
-from PySide6.QtGui import QColor, QPainter, QPen, QFont, QIcon, QPixmap
+from PySide6.QtGui import QColor, QPainter, QPen, QFont, QFontDatabase, QIcon, QPixmap, QPalette
 from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtWidgets import QWidget, QFrame, QLabel, QVBoxLayout, QPushButton
+from PySide6.QtWidgets import QApplication, QWidget, QFrame, QLabel, QVBoxLayout, QPushButton
+from string import Template
 
-BG = "#0a0e17"
-PANEL = "#121a28"
+# Shared color, typography and spacing tokens. Metric hues are semantic, not navigation hues.
+BG = "#0b101a"
+PANEL = "#141d2b"
+SIDEBAR = "#101724"
+SURFACE = "#192536"
+RAISED = "#223149"
+BORDER = "#29384e"
+GRID = "#263549"
 TEXT = "#edf2fb"
-MUTED = "#98a9c2"
-BLUE = "#7c9cff"
-GREEN = "#42dbb0"
+MUTED = "#9caec7"
+SUBTLE = "#8193af"
+BLUE = "#83a8ff"
+GREEN = "#45dcb5"
 ORANGE = "#ffc078"
-GRID = "#26344a"
+DANGER = "#ff8395"
+NAV_TINT = "#a9bad4"
+NAV_SELECTED = "#243650"
+NAV_TEXT = "#d9e6ff"
+DISABLED = "#718097"
+SPACE = 8
+CARD_RADIUS = 14
 
-STYLE = """
-QWidget { background: #0a0e17; color: #edf2fb; font-family: 'Segoe UI'; font-size: 13px; }
-QFrame#sidebar { background: #101624; border-right: 1px solid #202c40; }
-QFrame#card { background: #121a28; border: 1px solid #253249; border-radius: 14px; }
+STYLE = Template("""
+QWidget { color: $TEXT; }
+QMainWindow, QDialog, QStackedWidget { background: $BG; }
+QFrame#sidebar { background: $SIDEBAR; border-right: 1px solid $BORDER; }
+QWidget#navContent, QScrollArea#navScroll, QWidget#navViewport { background: $SIDEBAR; }
+QFrame#card { background: $PANEL; border: 1px solid $BORDER; border-radius: ${CARD_RADIUS}px; }
 QFrame#card QLabel, QFrame#sidebar QLabel { background: transparent; }
-QLabel[role="muted"] { color: #98a9c2; }
-QLabel[role="title"] { font-size: 28px; font-weight: 700; }
-QLabel[role="section"] { font-size: 16px; font-weight: 600; }
-QLabel[role="value"] { font-size: 29px; font-weight: 700; }
-QPushButton { background: #24334b; border: 0; border-radius: 8px; padding: 10px 15px; font-weight: 600; }
-QPushButton:hover { background: #344761; }
-QPushButton:disabled { color: #718097; background: #192334; }
-QPushButton#primary { background: #7c9cff; color: #0a0e17; }
-QPushButton#primary:hover { background: #9bb2ff; }
-QPushButton#primary:disabled { background: #27334b; color: #718097; }
-QPushButton#nav { text-align: left; background: transparent; color: #98a9c2; padding: 12px 15px; }
-QPushButton#nav:hover { background: #1c293e; color: #edf2fb; }
-QPushButton#nav:checked { background: #263656; color: #a9bdff; }
-QLineEdit, QComboBox { background: #151e2d; border: 1px solid #2c3c55; border-radius: 8px; padding: 9px; selection-background-color: #385384; }
-QComboBox QAbstractItemView { background: #151e2d; selection-background-color: #385384; color: #edf2fb; }
-QTableWidget { background: #121a28; alternate-background-color: #172233; border: 1px solid #253249; border-radius: 8px; gridline-color: #253249; selection-background-color: #304872; }
-QHeaderView::section { background: #1c293d; color: #aabbd4; padding: 10px; border: 0; font-weight: 600; }
-QScrollArea { border: 0; }
-QScrollBar:vertical { background: #101624; width: 9px; margin: 0; }
-QScrollBar::handle:vertical { background: #34445e; min-height: 24px; border-radius: 4px; }
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-QCheckBox { spacing: 9px; background: transparent; padding: 3px 0; }
-QCheckBox::indicator { width: 16px; height: 16px; border: 1px solid #405576; border-radius: 4px; background: #192334; }
-QCheckBox::indicator:checked { background: #7c9cff; border: 2px solid #a9bdff; }
-QSlider::groove:horizontal { height: 6px; background: #26344a; border-radius: 3px; }
-QSlider::sub-page:horizontal { background: #7c9cff; border-radius: 3px; }
-QSlider::handle:horizontal { background: #edf2fb; width: 16px; margin: -5px 0; border-radius: 8px; }
-QProgressBar { background: #26344a; border: 0; border-radius: 5px; min-height: 10px; max-height: 10px; }
-QProgressBar::chunk { background: #7c9cff; border-radius: 5px; }
-"""
+QLabel[role="muted"] { color: $MUTED; font-size: 12px; }
+QLabel[role="eyebrow"] { color: $SUBTLE; font-size: 11px; font-weight: 600; }
+QLabel[role="brand"] { font-size: 21px; font-weight: 700; color: $TEXT; }
+QLabel[role="title"] { font-size: 28px; font-weight: 600; }
+QLabel[role="section"] { font-size: 15px; font-weight: 600; }
+QLabel[role="value"] { font-size: 28px; font-weight: 600; }
+QLabel[role="metric"] { color: $MUTED; font-size: 12px; font-weight: 600; }
+QPushButton { background: $RAISED; border: 1px solid $BORDER; border-radius: 9px; padding: 9px 14px; font-weight: 600; }
+QPushButton:hover { background: #2b3d56; }
+QPushButton:pressed { background: $SURFACE; }
+QPushButton:focus { border-color: $BLUE; }
+QPushButton:disabled { color: $DISABLED; background: $SURFACE; border-color: $BORDER; }
+QPushButton#primary { background: $BLUE; border-color: $BLUE; color: $BG; }
+QPushButton#primary:hover { background: #a4beff; }
+QPushButton#primary:pressed { background: #6f97ed; }
+QPushButton#primary:focus { border-color: $TEXT; }
+QPushButton#primary:disabled { background: $RAISED; border-color: $BORDER; color: $DISABLED; }
+QPushButton#nav { text-align: left; background: transparent; color: $MUTED; border: 1px solid transparent; border-radius: 10px; padding: 8px 12px; font-weight: 500; }
+QPushButton#nav:hover { background: $SURFACE; color: $TEXT; }
+QPushButton#nav:checked { background: $NAV_SELECTED; color: $NAV_TEXT; border-color: #344b6c; font-weight: 600; }
+QPushButton#nav:focus { border-color: $BLUE; }
+QLineEdit, QComboBox, QPlainTextEdit { background: $SURFACE; border: 1px solid $BORDER; border-radius: 9px; padding: 8px; selection-background-color: $NAV_SELECTED; }
+QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus { border-color: $BLUE; }
+QLineEdit:disabled, QComboBox:disabled { color: $DISABLED; }
+QComboBox QAbstractItemView { background: $SURFACE; selection-background-color: $NAV_SELECTED; color: $TEXT; outline: 0; padding: 3px; }
+QTableWidget { background: $PANEL; alternate-background-color: $SURFACE; border: 1px solid $BORDER; border-radius: 10px; gridline-color: $GRID; selection-background-color: $NAV_SELECTED; selection-color: $TEXT; outline: 0; }
+QTableWidget::item { padding: 5px 8px; }
+QTableWidget::item:selected { background: $NAV_SELECTED; color: $TEXT; }
+QHeaderView { background: $RAISED; }
+QHeaderView::section { background: $RAISED; color: $NAV_TEXT; padding: 9px; border: 0; border-bottom: 1px solid $BORDER; font-size: 12px; font-weight: 600; }
+QHeaderView::section:hover { background: #2b3d56; color: $TEXT; }
+QScrollArea { border: 0; background: transparent; }
+QScrollBar:vertical { background: transparent; width: 8px; margin: 0; }
+QScrollBar:horizontal { background: transparent; height: 8px; margin: 0; }
+QScrollBar::handle:vertical { background: #3a4b64; min-height: 24px; border-radius: 4px; }
+QScrollBar::handle:horizontal { background: #3a4b64; min-width: 24px; border-radius: 4px; }
+QScrollBar::handle:hover { background: #536984; }
+QScrollBar::add-line, QScrollBar::sub-line { height: 0; width: 0; }
+QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
+QCheckBox { spacing: 10px; background: transparent; padding: 4px 0; }
+QCheckBox:disabled { color: $DISABLED; }
+QSlider::groove:horizontal { height: 6px; background: $GRID; border-radius: 3px; }
+QSlider::sub-page:horizontal { background: $BLUE; border-radius: 3px; }
+QSlider::handle:horizontal { background: $TEXT; width: 16px; margin: -5px 0; border-radius: 8px; }
+QProgressBar { background: $GRID; border: 0; border-radius: 5px; min-height: 10px; max-height: 10px; }
+QProgressBar::chunk { background: $BLUE; border-radius: 5px; }
+QToolTip { background: $RAISED; color: $TEXT; border: 1px solid $BORDER; padding: 6px; }
+""").substitute(globals())
+
+
+def preferred_font(families=None):
+    """Resolve installed fonts only after QApplication exists."""
+    available = {name.casefold(): name for name in
+                 (QFontDatabase.families() if families is None else families)}
+    for name in ("Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", "Inter", "Noto Sans", "Arial", "DejaVu Sans"):
+        if name.casefold() in available:
+            return available[name.casefold()]
+    return "Sans Serif"
+
+
+def make_font(size, weight=QFont.Weight.Normal):
+    font = QFont(QApplication.font())
+    font.setPixelSize(size)
+    font.setWeight(weight)
+    return font
+
+
+def configure_theme(app):
+    app.setStyle("Fusion")
+    family = preferred_font()
+    font = QFont(family)
+    font.setPixelSize(13)
+    app.setFont(font)
+    palette = QPalette()
+    for role, color in (
+        (QPalette.ColorRole.Window, BG), (QPalette.ColorRole.WindowText, TEXT),
+        (QPalette.ColorRole.Base, PANEL), (QPalette.ColorRole.AlternateBase, SURFACE),
+        (QPalette.ColorRole.Text, TEXT), (QPalette.ColorRole.Button, RAISED),
+        (QPalette.ColorRole.ButtonText, TEXT), (QPalette.ColorRole.Highlight, BLUE),
+        (QPalette.ColorRole.HighlightedText, BG), (QPalette.ColorRole.PlaceholderText, MUTED),
+        (QPalette.ColorRole.ToolTipBase, RAISED), (QPalette.ColorRole.ToolTipText, TEXT),
+        (QPalette.ColorRole.Link, BLUE)):
+        palette.setColor(role, QColor(color))
+    for role in (QPalette.ColorRole.WindowText, QPalette.ColorRole.Text, QPalette.ColorRole.ButtonText):
+        palette.setColor(QPalette.ColorGroup.Disabled, role, QColor(DISABLED))
+    app.setPalette(palette)
+    app.setStyleSheet(STYLE)
+    return family
 
 
 # Original outline icons, drawn on a consistent 24 × 24 grid.
@@ -61,27 +135,28 @@ NAV_ICONS = {
     "analysis": '<path d="M4 4v16h16M7 15l4-5 4 2 5-6"/><circle cx="20" cy="6" r=".6"/>',
     "gaming": '<path d="M8 7h8c3 0 4.4 2.5 5.1 5.8l.6 3.1c.5 2.7-2 4-3.6 2.4L15 15H9l-3.1 3.3c-1.6 1.6-4.1.3-3.6-2.4l.6-3.1C3.6 9.5 5 7 8 7Z"/><path d="M6.5 11h4m-2-2v4m7.5-2h.1m2.4 2h.1"/>',
     "benchmark": '<path d="M4 18a9 9 0 1 1 16 0M12 6v2M6.5 9.5l1.4 1.4M17.5 9.5l-1.4 1.4M12 15l4-5M8 19h8"/><circle cx="12" cy="15" r="1.2"/>',
-    "settings": '<circle cx="12" cy="12" r="3"/><path d="M9.4 3.5h5.2l.7 2.7 2.4 1.4 2.7-.7 2.1 3.6-2 2v2.8l2 2-2.1 3.6-2.7-.7-2.4 1.4-.7 2.7h-5.2l-.7-2.7-2.4-1.4-2.7.7-2.1-3.6 2-2v-2.8l-2-2 2.1-3.6 2.7.7 2.4-1.4z" transform="translate(1 0) scale(.92)"/>',
+    "settings": '<circle cx="12" cy="12" r="3"/><path d="M10 3h4l.6 2.5 2 .9 2.2-1.3 2 3.5-1.9 1.8v2.2l1.9 1.8-2 3.5-2.2-1.3-2 .9-.6 2.5h-4l-.6-2.5-2-.9-2.2 1.3-2-3.5 1.9-1.8v-2.2L3.2 8.6l2-3.5 2.2 1.3 2-.9z"/>',
 }
 
 
 def navigation_icon(name):
-    """Render sharp, theme-aware icons for normal and selected button states."""
+    """Use exactly one tint for every icon in every Qt mode and state."""
     icon = QIcon()
-    for state, color in ((QIcon.State.Off, MUTED), (QIcon.State.On, "#a9bdff")):
-        for mode, tint in ((QIcon.Mode.Normal, color), (QIcon.Mode.Active, TEXT if state == QIcon.State.Off else color)):
-            svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
-                   f'fill="none" stroke="{tint}" stroke-width="1.7" '
-                   f'stroke-linecap="round" stroke-linejoin="round">{NAV_ICONS[name]}</svg>')
-            renderer = QSvgRenderer(QByteArray(svg.encode("utf-8")))
-            for scale in (1, 2, 3):
-                size = 20 * scale
-                pixmap = QPixmap(size, size)
-                pixmap.fill(Qt.GlobalColor.transparent)
-                painter = QPainter(pixmap)
-                renderer.render(painter, QRectF(0, 0, size, size))
-                painter.end()
-                pixmap.setDevicePixelRatio(scale)
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+           f'fill="none" stroke="{NAV_TINT}" stroke-width="1.75" '
+           f'stroke-linecap="round" stroke-linejoin="round">{NAV_ICONS[name]}</svg>')
+    renderer = QSvgRenderer(QByteArray(svg.encode("utf-8")))
+    for scale in (1, 2, 3):
+        size = 20 * scale
+        pixmap = QPixmap(size, size)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        renderer.render(painter, QRectF(0, 0, size, size))
+        painter.end()
+        pixmap.setDevicePixelRatio(scale)
+        for mode in (QIcon.Mode.Normal, QIcon.Mode.Active, QIcon.Mode.Selected, QIcon.Mode.Disabled):
+            for state in (QIcon.State.Off, QIcon.State.On):
                 icon.addPixmap(pixmap, mode, state)
     return icon
 
@@ -98,8 +173,8 @@ def card():
     frame = QFrame()
     frame.setObjectName("card")
     layout = QVBoxLayout(frame)
-    layout.setContentsMargins(20, 16, 20, 16)
-    layout.setSpacing(10)
+    layout.setContentsMargins(2 * SPACE, 2 * SPACE, 2 * SPACE, 2 * SPACE)
+    layout.setSpacing(SPACE)
     return frame, layout
 
 
@@ -119,8 +194,9 @@ class Ring(QWidget):
         self.setMinimumHeight(122)
 
     def set_value(self, value):
-        self.value = value
-        self.update()
+        if self.value != value:
+            self.value = value
+            self.update()
 
     def paintEvent(self, event):
         p = QPainter(self)
@@ -138,7 +214,7 @@ class Ring(QWidget):
             p.setPen(pen)
             p.drawArc(rect, 225*16, -int(270*16*max(0,min(100,self.value))/100))
         p.setPen(QColor(TEXT))
-        p.setFont(QFont("Segoe UI", 22, QFont.Weight.DemiBold))
+        p.setFont(make_font(29, QFont.Weight.DemiBold))
         p.drawText(rect, Qt.AlignmentFlag.AlignCenter,
                    "N/A" if self.value is None else f"{self.value:.1f}%")
 
@@ -148,11 +224,13 @@ class MetricCard(QFrame):
         super().__init__()
         self.setObjectName("card")
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(18, 14, 18, 14)
-        layout.addWidget(label(name, "section"))
+        layout.setContentsMargins(2 * SPACE, 2 * SPACE, 2 * SPACE, 2 * SPACE)
+        layout.setSpacing(SPACE)
+        layout.addWidget(label(name, "metric"))
         self.ring = Ring(color)
         layout.addWidget(self.ring)
         self.detail = label("Čekám na data", "muted")
+        self.detail.setWordWrap(True)
         layout.addWidget(self.detail)
 
     def set_value(self, value, detail):
