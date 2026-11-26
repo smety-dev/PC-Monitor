@@ -1,10 +1,13 @@
 """Qt workspaces for process monitoring, recording and analysis."""
 from datetime import datetime
+from threading import Event
+from diagnostics import LOG
+from qt_dialogs import ErrorDialog
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QComboBox,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QFileDialog, QMessageBox)
+    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QFileDialog)
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from qt_theme import card, label, button, PANEL, TEXT, MUTED, BLUE, GREEN, ORANGE, GRID
@@ -36,7 +39,8 @@ def populate(t, rows):
                 if item is None:
                     item = QTableWidgetItem()
                     t.setItem(i, j, item)
-                item.setText(str(value))
+                if item.text() != str(value):
+                    item.setText(str(value))
                 if j:
                     item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
     finally:
@@ -54,32 +58,51 @@ class Plot(FigureCanvasQTAgg):
         self.ax = self.figure.add_subplot(111)
         self.figure.subplots_adjust(left=.10, right=.97, top=.90, bottom=.18)
         self.setMinimumHeight(235)
+        self._layout_key = None
+        self._data_key = None
+        self._artists = []
         self.render([], [], True)
 
     def render(self, x, lines, percentage=False, xlabel="Uplynulý čas (s)"):
+        # Retain axes and line artists across ordinary updates.
+        x = tuple(x)
+        lines = [(name, color, tuple(values)) for name, color, values in lines]
+        layout_key = (percentage, xlabel, tuple((name, color) for name, color, _ in lines))
+        data_key = (x, tuple(values for _, _, values in lines))
+        if layout_key == self._layout_key and data_key == self._data_key:
+            return
         a = self.ax
-        a.clear()
-        a.set_facecolor(PANEL)
-        a.tick_params(colors=MUTED, length=0, pad=6)
-        a.grid(axis="y", color=GRID, alpha=.7)
-        for spine in a.spines.values():
-            spine.set_visible(False)
-        a.set_xlabel(xlabel, color=MUTED)
-        for name, color, values in lines:
-            a.plot(x, [float("nan") if v is None else v for v in values],
-                   color=color, label=name, linewidth=1.8, marker="." if len(x)==1 else None)
-        if percentage:
-            a.set_ylim(0, 100)
-        else:
-            a.set_ylim(bottom=0)
-        if not lines:
-            a.set_xticks([])
-            a.set_yticks([])
-            a.set_xlabel("")
-            a.text(.5, .5, "Zatím nejsou k dispozici žádná data", transform=a.transAxes,
-                   ha="center", va="center", color=MUTED, fontsize=12)
+        if layout_key != self._layout_key:
+            a.clear()
+            a.set_facecolor(PANEL)
+            a.tick_params(colors=MUTED, length=0, pad=6)
+            a.grid(axis="y", color=GRID, alpha=.7)
+            for spine in a.spines.values():
+                spine.set_visible(False)
+            a.set_xlabel(xlabel, color=MUTED)
+            self._artists = [a.plot([], [], color=color, label=name, linewidth=1.8)[0]
+                             for name, color, _ in lines]
+            if lines:
+                a.legend(frameon=False, labelcolor=TEXT, loc="upper left", ncol=min(3, len(lines)))
+            else:
+                a.set_xticks([])
+                a.set_yticks([])
+                a.set_xlabel("")
+                a.text(.5, .5, "Zatím nejsou k dispozici žádná data", transform=a.transAxes,
+                       ha="center", va="center", color=MUTED, fontsize=12)
+        for artist, (_, _, values) in zip(self._artists, lines):
+            artist.set_data(x, [float("nan") if value is None else value for value in values])
+            artist.set_marker("." if len(x) == 1 else "None")
         if lines:
-            a.legend(frameon=False, labelcolor=TEXT, loc="upper left", ncol=min(3,len(lines)))
+            a.set_autoscalex_on(True)
+            a.set_autoscaley_on(not percentage)
+            a.relim()
+            a.autoscale_view()
+            if percentage:
+                a.set_ylim(0, 100)
+            else:
+                a.set_ylim(0, max(1e-9, a.get_ylim()[1]))
+        self._layout_key, self._data_key = layout_key, data_key
         self.draw_idle()
 
 
@@ -182,7 +205,8 @@ class Recording(QWidget):
         try:
             self.recorder.start(path,int(self.interval.currentText()))
         except (OSError,ValueError,RuntimeError) as exc:
-            QMessageBox.warning(self,"Záznam nelze spustit",str(exc))
+            LOG.warning("CSV start failed: %s", type(exc).__name__)
+            ErrorDialog(self.window(), "Záznam nelze spustit", "Zkontroluj cílový soubor a oprávnění.", str(exc)).exec()
             return
         self.path.setText(path)
         self.status.setText("● Probíhá záznam")
@@ -193,7 +217,8 @@ class Recording(QWidget):
             self.recorder.stop()
             self.status.setText("Záznam ukončen")
         except OSError as exc:
-            self.status.setText(str(exc))
+            LOG.warning("CSV close failed: %s", type(exc).__name__)
+            self.status.setText("Chyba při ukončování záznamu: " + str(exc))
         self.controls()
 
     def capture(self,cpu,ram,gpu,advanced):
@@ -203,7 +228,9 @@ class Recording(QWidget):
                 self.controls()
             except (OSError,ValueError) as exc:
                 self.finish()
+                LOG.warning("CSV write failed: %s", type(exc).__name__)
                 self.status.setText("Chyba zápisu: "+str(exc))
+                ErrorDialog(self.window(), "Záznam byl zastaven", "Zápis do CSV selhal.", str(exc)).exec()
 
 
 GROUPS = {
@@ -215,10 +242,10 @@ GROUPS = {
 }
 
 
-def analyze(path):
-    rows,skipped = read_recording(path)
-    stats = summarize(rows)
-    return rows,skipped,stats,utilization_hints(rows,stats)
+def analyze(path, cancel=None):
+    rows,skipped = read_recording(path, cancel)
+    stats = summarize(rows, cancel)
+    return rows,skipped,stats,utilization_hints(rows,stats,cancel)
 
 
 class Analysis(QWidget):
@@ -228,6 +255,7 @@ class Analysis(QWidget):
         layout.setContentsMargins(0,0,0,0)
         self.rows = []
         self.executor = ThreadPoolExecutor(max_workers=1)
+        self.cancel = Event()
         self.future = None
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.poll)
@@ -274,7 +302,8 @@ class Analysis(QWidget):
         self.filename = Path(path).name
         self.open_button.setEnabled(False)
         self.info.setText("Načítám…")
-        self.future = self.executor.submit(analyze,path)
+        self.cancel.clear()
+        self.future = self.executor.submit(analyze,path,self.cancel)
         self.timer.start(100)
 
     def poll(self):
@@ -285,7 +314,8 @@ class Analysis(QWidget):
             rows,skipped,stats,hints = self.future.result()
         except Exception as exc:
             self.info.setText("Načtení selhalo")
-            QMessageBox.warning(self,"Neplatný záznam",str(exc))
+            LOG.warning("CSV analysis failed: %s", type(exc).__name__)
+            ErrorDialog(self.window(), "Neplatný záznam", "Soubor se nepodařilo analyzovat.", str(exc)).exec()
         else:
             self.rows = rows
             self.info.setText(f"{self.filename}  ·  {len(rows)} vzorků  ·  {rows[-1]['elapsed_s']:.1f} s  ·  vynecháno {skipped}")
@@ -317,4 +347,5 @@ class Analysis(QWidget):
 
     def shutdown(self):
         self.timer.stop()
+        self.cancel.set()
         self.executor.shutdown(wait=False,cancel_futures=True)
