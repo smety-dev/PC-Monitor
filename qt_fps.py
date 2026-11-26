@@ -47,7 +47,7 @@ class FpsPanel(QWidget):
         row.addStretch()
         body.addLayout(row)
         self.missing_hint = ("Modul chybí nebo je poškozen. Rozbal znovu celý balíček PC Monitor." if FROZEN else
-                             self.missing_hint)
+                             "Spusť python presentmon_bundle.py v terminálu projektu.")
         self.status = label("Vyber běžící hru." if self.path else self.missing_hint, "muted")
         self.status.setWordWrap(True)
         body.addWidget(self.status)
