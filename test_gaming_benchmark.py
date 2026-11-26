@@ -5,7 +5,7 @@ from concurrent.futures import CancelledError
 from pathlib import Path
 from threading import Event
 from unittest.mock import Mock, patch
-from gaming_benchmark import BenchmarkRecorder, HEADER, analyze_benchmark
+from gaming_benchmark import BenchmarkRecorder, HEADER, analyze_benchmark, relative_change
 
 
 class BenchmarkTests(unittest.TestCase):
@@ -102,3 +102,10 @@ class BenchmarkTests(unittest.TestCase):
         cancel.set()
         with self.assertRaises(CancelledError):
             analyze_benchmark(self.path, cancel)
+
+    def test_relative_change(self):
+        self.assertAlmostEqual(relative_change(1.09, .43), -60.55045871559633)
+        self.assertEqual(relative_change(1.09, 0), -100)
+        self.assertEqual(relative_change(50, 75), 50)
+        self.assertIsNone(relative_change(0, 1))
+        self.assertIsNone(relative_change(None, 1))
