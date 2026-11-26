@@ -4,6 +4,7 @@ import time
 import uuid
 from PySide6.QtCore import QObject, QProcess, Signal
 from frame_metrics import FrameStream
+from gaming_benchmark import BenchmarkRecorder, MAX_ROWS
 from diagnostics import LOG
 
 from presentmon_bundle import bundled_exe
@@ -13,6 +14,7 @@ from presentmon_errors import capture_error
 class Capture(QObject):
     changed = Signal(str)
     failed = Signal(str, str)
+    benchmark_done = Signal(str, str, int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -22,6 +24,7 @@ class Capture(QObject):
         self.process.errorOccurred.connect(self.error)
         self.process.finished.connect(self.finished)
         self.process.started.connect(lambda: self.changed.emit("Čekám na snímky vybraného procesu…"))
+        self.benchmark = BenchmarkRecorder()
         self.stream = None
         self.pending = b""
         self.stderr = ""
@@ -73,7 +76,45 @@ class Capture(QObject):
         if self.stream:
             received = time.monotonic()
             for part in parts:
-                self.stream.feed(part.decode("utf-8", errors="replace"), received)
+                accepted = self.stream.feed(part.decode("utf-8", errors="replace"), received)
+                if accepted and self.benchmark.active:
+                    try:
+                        self.benchmark.add(*self.stream.last_frame, received)
+                        if self.benchmark.count >= MAX_ROWS:
+                            self.stop_benchmark("Dosažen limit snímků.")
+                    except (OSError, ValueError) as exc:
+                        self.stop_benchmark("Chyba zápisu benchmarku.", exc)
+
+    def start_benchmark(self, path, duration):
+        if not self.active:
+            raise RuntimeError("Nejprve spusť FPS měření na stránce Gaming.")
+        self.benchmark.start(path, duration)
+
+    def tick_benchmark(self):
+        if not self.benchmark.active:
+            return
+        if not self.active:
+            self.stop_benchmark("FPS měření skončilo.")
+        elif self.benchmark.elapsed >= self.benchmark.duration:
+            self.stop_benchmark("Časový limit dokončen.")
+        else:
+            try:
+                self.benchmark.flush()
+            except (OSError, ValueError) as exc:
+                self.stop_benchmark("Chyba zápisu benchmarku.", exc)
+
+    def stop_benchmark(self, reason="Benchmark zastaven.", error=None):
+        if not self.benchmark.active:
+            return
+        path, count = self.benchmark.path, self.benchmark.count
+        try:
+            self.benchmark.stop()
+        except (OSError, ValueError) as exc:
+            error = exc
+        if error is not None:
+            LOG.warning("Benchmark write failed: %s", type(error).__name__)
+            reason = "Chyba zápisu benchmarku. Soubor může být neúplný."
+        self.benchmark_done.emit(path, reason, count)
 
     def read_error(self):
         self.stderr = (self.stderr + bytes(self.process.readAllStandardError()).decode("utf-8", errors="replace"))[-2000:]
@@ -83,7 +124,9 @@ class Capture(QObject):
             self.report_failure("PresentMon se nepodařilo spustit.", self.process.errorString())
 
     def finished(self, code, status):
+        self.read()
         self.read_error()
+        self.stop_benchmark("FPS měření skončilo; benchmark může být kratší.")
         self.stream = None
         if not self.stopping and not self.reported_failure:
             if code == 0 and status == QProcess.ExitStatus.NormalExit:
@@ -99,6 +142,7 @@ class Capture(QObject):
 
     def stop(self):
         self.stopping = True
+        self.stop_benchmark("FPS měření zastaveno; benchmark může být kratší.")
         if self.active:
             # Stop only our uniquely named ETW session; never the default or another tool's capture.
             cleanup = QProcess()

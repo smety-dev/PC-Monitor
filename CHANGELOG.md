@@ -2,6 +2,25 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.9.4]
+
+### Added
+- Gaming Performance Analyzer workspace with 30/60/120/300-second timed per-frame benchmark recording using the existing PresentMon capture.
+- Separate buffered benchmark CSV; dominant swap-chain statistics, average FPS, 1% low, frametime and adaptive/fixed hitch metrics.
+- Offline A/B comparison with relative percentage changes, FPS and peak-frametime charts, synthetic demo generator and ten regression tests.
+
+### Fixed
+- Consistent relative percentage changes, symmetric plot margins and centered legends.
+- Mouse-wheel scrolling over read-only charts in scrollable pages.
+
+### Changed
+- Replaced Windows stock navigation icons with consistent original high-DPI outline icons in theme colors.
+
+### Notes
+- Hardware CSV schema, dependencies and MIT license unchanged. No additional capture session.
+- Stutter classification is heuristic; no CPU/GPU bottleneck inference or displayed-FPS claim.
+- Windows ETW capture and benchmark GUI validation pending.
+
 ## [0.9.3]
 
 ### Changed

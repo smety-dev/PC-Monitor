@@ -2,15 +2,15 @@
 import sys
 from collections import deque
 import psutil
-from PySide6.QtCore import QTimer, QByteArray, Qt
+from PySide6.QtCore import QTimer, QByteArray, Qt, QSize
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QVBoxLayout,
-    QHBoxLayout, QGridLayout, QStackedWidget, QButtonGroup, QScrollArea, QProgressBar,
-    QStyle)
-from qt_theme import STYLE, BLUE, GREEN, ORANGE, MetricCard, card, label, button
+    QHBoxLayout, QGridLayout, QStackedWidget, QButtonGroup, QScrollArea, QProgressBar)
+from qt_theme import STYLE, BLUE, GREEN, ORANGE, MetricCard, card, label, button, navigation_icon
 from qt_monitor import Monitor
 from diagnostics import configure_logging, LOG
 from qt_gaming import GamingPage
+from qt_benchmark import BenchmarkPage
 from qt_settings import SettingsPage
 from preferences import Preferences
 from qt_pages import Processes, Recording, Analysis, Plot, fmt
@@ -77,20 +77,22 @@ class Window(QMainWindow):
         self.recording = Recording()
         self.analysis = Analysis()
         self.gaming = GamingPage(self.monitor, self, self.prefs)
+        self.benchmark = BenchmarkPage(self.gaming.fps.capture, lambda: self.navigate(7))
         self.settings_page = SettingsPage(self.prefs, self.reset_preferences,
                                           lambda: self.navigate(7), lambda: self.navigate(5))
         self.recording.interval.setCurrentText(str(self.prefs.get("recording/interval")))
         self.recording.interval.currentTextChanged.connect(self.save_recording_interval)
         self.views = [
-            ("Přehled","Přehled systému",self.overview(),QStyle.StandardPixmap.SP_ComputerIcon),
-            ("Procesor","Procesor",self.cpu_page(),QStyle.StandardPixmap.SP_DriveHDIcon),
-            ("Disky","Úložiště",self.disk_page(),QStyle.StandardPixmap.SP_DriveHDIcon),
-            ("Síť","Síťový provoz",self.network_page(),QStyle.StandardPixmap.SP_DriveNetIcon),
-            ("Procesy","Správce procesů",self.processes,QStyle.StandardPixmap.SP_FileDialogDetailedView),
-            ("Záznam","Záznam výkonu",self.recording,QStyle.StandardPixmap.SP_DialogSaveButton),
-            ("Analýza","Analýza výkonu",scroll(self.analysis),QStyle.StandardPixmap.SP_FileDialogContentsView),
-            ("Gaming","Gaming Mode & Overlay",scroll(self.gaming),QStyle.StandardPixmap.SP_MediaPlay),
-            ("Nastavení","Nastavení aplikace",scroll(self.settings_page),QStyle.StandardPixmap.SP_FileDialogDetailedView),
+            ("Přehled","Přehled systému",self.overview(),"overview"),
+            ("Procesor","Procesor",self.cpu_page(),"cpu"),
+            ("Disky","Úložiště",self.disk_page(),"disks"),
+            ("Síť","Síťový provoz",self.network_page(),"network"),
+            ("Procesy","Správce procesů",self.processes,"processes"),
+            ("Záznam","Záznam výkonu",self.recording,"recording"),
+            ("Analýza","Analýza výkonu",scroll(self.analysis),"analysis"),
+            ("Gaming","Gaming Mode & Overlay",scroll(self.gaming),"gaming"),
+            ("Benchmark","Gaming Performance Analyzer",scroll(self.benchmark),"benchmark"),
+            ("Nastavení","Nastavení aplikace",scroll(self.settings_page),"settings"),
         ]
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
@@ -101,7 +103,8 @@ class Window(QMainWindow):
             self.stack.addWidget(widget)
             item = button(name)
             item.setObjectName("nav")
-            item.setIcon(self.style().standardIcon(icon))
+            item.setIcon(navigation_icon(icon))
+            item.setIconSize(QSize(20, 20))
             item.setCheckable(True)
             self.group.addButton(item,i)
             item.clicked.connect(lambda checked=False,index=i:self.navigate(index))
@@ -232,8 +235,10 @@ class Window(QMainWindow):
             self.recording.capture(cpu,ram,gpu,self.monitor.advanced)
             self.history.append((cpu,ram.percent,gpu))
         recording = self.recording.recorder.active
-        self.gaming.refresh(basic, self.monitor.gpu, self.monitor.advanced, recording, not self.isMinimized())
-        self.live.setText("●  Záznam probíhá" if recording else
+        self.benchmark.refresh(self.stack.currentIndex() == 8 and not self.isMinimized())
+        benchmarking = self.gaming.fps.capture.benchmark.active
+        self.gaming.refresh(basic, self.monitor.gpu, self.monitor.advanced, recording or benchmarking, not self.isMinimized())
+        self.live.setText("●  Benchmark" if benchmarking else "●  Záznam probíhá" if recording else
                           "●  Gaming Mode" if self.gaming.enabled else "●  Živé měření")
         if not self.isMinimized():
             self.render_page()
@@ -310,6 +315,7 @@ class Window(QMainWindow):
             self.prefs.remove_geometry()
         self.prefs.sync()
         self.timer.stop()
+        self.benchmark.shutdown()
         self.gaming.shutdown()
         self.monitor.close()
         self.recording.finish()

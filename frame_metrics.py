@@ -30,6 +30,7 @@ class FrameStream:
         self.latest = None
         self.last_received = None
         self.cached = None
+        self.last_frame = None
 
     def feed(self, line, received):
         try:
@@ -62,6 +63,7 @@ class FrameStream:
         if frames and timestamp <= frames[-1][0]:
             return False
         frames.append((timestamp, ms))
+        self.last_frame = (chain, timestamp, ms)
         self.latest = timestamp if self.latest is None else max(self.latest, timestamp)
         self.last_received = received
         self.cached = None
