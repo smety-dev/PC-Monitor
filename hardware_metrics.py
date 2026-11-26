@@ -20,12 +20,15 @@ def rates(previous, current, elapsed):
 
 
 class Sampler:
-    def __init__(self):
+    def __init__(self, clock=time.monotonic):
+        self.clock = clock
         self.previous = None
+        self.drives = []
+        self.drives_at = None
         psutil.cpu_percent(percpu=True)
 
     def sample(self):
-        now = time.monotonic()
+        now = self.clock()
         disk = safe_read(psutil.disk_io_counters)
         net = safe_read(psutil.net_io_counters)
         disk_pair = (disk.read_bytes, disk.write_bytes) if disk else None
@@ -38,18 +41,21 @@ class Sampler:
         self.previous = now, disk_pair, net_pair
 
         frequency = safe_read(psutil.cpu_freq)
-        drives = []
-        for partition in safe_read(psutil.disk_partitions, all=False) or []:
-            if "cdrom" in partition.opts or "remote" in partition.opts:
-                continue
-            usage = safe_read(psutil.disk_usage, partition.mountpoint)
-            if usage is not None:
-                drives.append((partition.mountpoint, usage.used, usage.total, usage.percent))
+        if self.drives_at is None or now - self.drives_at >= 10:
+            drives = []
+            for partition in safe_read(psutil.disk_partitions, all=False) or []:
+                if "cdrom" in partition.opts or "remote" in partition.opts:
+                    continue
+                usage = safe_read(psutil.disk_usage, partition.mountpoint)
+                if usage is not None:
+                    drives.append((partition.mountpoint, usage.used, usage.total, usage.percent))
+            self.drives = drives
+            self.drives_at = now
 
         return {
             "cores": safe_read(psutil.cpu_percent, percpu=True) or [],
             "frequency": frequency.current if frequency else None,
             "disk_rates": disk_rates,
             "net_rates": net_rates,
-            "drives": drives,
+            "drives": self.drives,
         }
