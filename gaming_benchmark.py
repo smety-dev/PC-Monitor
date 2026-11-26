@@ -32,7 +32,7 @@ class BenchmarkRecorder:
         self.started = 0
         self.duration = 0
         self.origin = None
-        self.seen = set()
+        self.seen = {}
         self.buffer = []
 
     @property
@@ -70,8 +70,11 @@ class BenchmarkRecorder:
         if chain not in self.seen:
             # The first interval can include time before recording began.
             if len(self.seen) < MAX_CHAINS:
-                self.seen.add(chain)
+                self.seen[chain] = timestamp
             return
+        if timestamp <= self.seen[chain]:
+            return
+        self.seen[chain] = timestamp
         elapsed = timestamp - self.origin
         if not 0 <= elapsed <= self.duration or self.count >= MAX_ROWS:
             return
@@ -123,6 +126,10 @@ class BenchmarkResult:
     @property
     def stutter_percent(self):
         return 100 * self.stutters / self.count
+
+    @property
+    def severe_percent(self):
+        return 100 * self.severe / self.count
 
 
 def check_cancel(cancel):
