@@ -32,7 +32,7 @@ def scroll(widget):
 
 
 def rate(value):
-    return "N/A" if value is None else f"{value/1024**2:.2f} MiB/s"
+    return "— MiB/s" if value is None else f"{value/1024**2:.2f}".replace(".", ",") + " MiB/s"
 
 
 class Window(QMainWindow):
@@ -94,9 +94,9 @@ class Window(QMainWindow):
         self.recording = Recording()
         self.analysis = Analysis()
         self.gaming = GamingPage(self.monitor, self, self.prefs)
-        self.benchmark = BenchmarkPage(self.gaming.fps.capture, lambda: self.navigate(7))
+        self.benchmark = BenchmarkPage(self.gaming.fps.capture, self.open_fps)
         self.settings_page = SettingsPage(self.prefs, self.reset_preferences,
-                                          lambda: self.navigate(7), lambda: self.navigate(5))
+                                          self.open_overlay, lambda: self.navigate(5))
         self.recording.interval.setCurrentText(str(self.prefs.get("recording/interval")))
         self.recording.interval.currentTextChanged.connect(self.save_recording_interval)
         self.views = [
@@ -107,8 +107,8 @@ class Window(QMainWindow):
             ("Procesy","Správce procesů",self.processes,"processes"),
             ("Záznam","Záznam výkonu",scroll(self.recording),"recording"),
             ("Analýza","Analýza výkonu",scroll(self.analysis),"analysis"),
-            ("Gaming","Herní režim",scroll(self.gaming),"gaming"),
-            ("Benchmark","Herní benchmark",scroll(self.benchmark),"benchmark"),
+            ("Gaming","Herní režim",self.gaming,"gaming"),
+            ("Benchmark","Herní benchmark",self.benchmark,"benchmark"),
             ("Nastavení","Nastavení aplikace",scroll(self.settings_page),"settings"),
         ]
         self.descriptions = (
@@ -296,6 +296,14 @@ class Window(QMainWindow):
         self.recording.interval.setCurrentText(str(self.prefs.get("recording/interval")))
         self.default_geometry()
         return True
+
+    def open_fps(self):
+        self.gaming.tabs.setCurrentIndex(0)
+        self.navigate(7)
+
+    def open_overlay(self):
+        self.gaming.tabs.setCurrentIndex(1)
+        self.navigate(7)
 
     def navigate(self,index):
         selected = self.group.button(index)
