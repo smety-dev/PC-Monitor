@@ -2,7 +2,7 @@ import csv
 import tempfile
 import unittest
 from pathlib import Path
-from performance_logger import PerformanceRecorder, FIELDS, make_row
+from performance_logger import PerformanceRecorder, CSV_HEADERS, make_row, excel_row
 
 
 class RecordingTests(unittest.TestCase):
@@ -33,13 +33,21 @@ class RecordingTests(unittest.TestCase):
                 rec.stop()
             with path.open(encoding="utf-8-sig", newline="") as file:
                 reader = csv.DictReader(file, delimiter=";")
-                self.assertEqual(tuple(reader.fieldnames), FIELDS)
+                self.assertEqual(tuple(reader.fieldnames), CSV_HEADERS)
                 rows = list(reader)
             self.assertEqual(len(rows), 2)
-            self.assertEqual(rows[0]["gpu_3d_percent"], "")
-            self.assertEqual(float(rows[1]["elapsed_s"]), 5)
+            self.assertEqual(rows[0]["GPU 3D (%)"], "")
+            self.assertEqual(float(rows[1]["Uplynulý čas (s)"].replace(",", ".")), 5)
             self.assertFalse(rec.active)
             self.assertFalse(rec.record(10, 20, 0, None, None))
+
+    def test_czech_excel_format(self):
+        row = make_row(1.25, 8.8, 83.9, 1048576, None, None,
+                       "2026-11-26T12:18:39.893+01:00")
+        cells = excel_row(row)
+        self.assertEqual(cells[0], "26.11.2026 12:18:39")
+        self.assertEqual(cells[1:4], ["1,25", "8,8", "83,9"])
+        self.assertEqual(cells[5], "")
 
     def test_no_overwrite(self):
         rec = PerformanceRecorder()
