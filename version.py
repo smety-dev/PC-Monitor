@@ -1,3 +1,3 @@
 """Single source of truth for the PC Monitor project version."""
 
-__version__ = "0.8.4"
+__version__ = "0.9.0"
