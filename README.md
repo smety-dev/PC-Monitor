@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.8.2 — Early development**
+**Current version: v0.8.3 — Early development**
 
 ## Features
 
@@ -17,6 +17,7 @@ A lightweight Windows application for real-time hardware performance monitoring,
 - Local disk capacity and aggregate disk read/write throughput
 - Aggregate network receive/send throughput
 - Read-only process manager with CPU and RAM usage, PID search and sortable columns
+- Local performance CSV recording with selectable sampling interval
 
 ## Requirements
 
@@ -36,7 +37,7 @@ The legacy terminal monitor is also available with `python main.py`. It does not
 
 ## Dashboard
 
-The sidebar switches between the overview, CPU, disks, network and process pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The dashboard uses existing Tkinter and matplotlib dependencies, with no extra installation required.
+The sidebar switches between the overview, CPU, disks, network, process and recording pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The dashboard uses existing Tkinter and matplotlib dependencies, with no extra installation required.
 
 ## Advanced monitoring
 
@@ -45,6 +46,10 @@ The hardware pages use psutil without requesting administrator privileges or ins
 ## Process manager
 
 Search by process name or PID and click column headings to sort. CPU is normalized to the total logical CPU capacity (0–100%); the first sample is unavailable until a second reading. RAM is the resident working set (RSS) in MiB, not private memory. Protected processes may have unavailable readings. Sampling runs in a background thread; no process termination, administrator elevation or additional dependency is requested.
+
+## Performance recording
+
+Open Záznam (Recording), select 1, 2, 5 or 10 seconds and choose a new CSV file. Existing files are never overwritten. Recording continues while navigating other pages and stops on application exit. CSV uses UTF-8 with BOM, semicolon separators, decimal points, ISO timestamps with timezone offsets, elapsed seconds and explicit metric units. Missing values are blank; GPU and advanced readings are independently polled and may repeat. Actual sampling times depend on GUI scheduling. Data stays local; no upload or administrator elevation is requested. Choose a writable local directory (not a network drive). No per-process data or temperatures are recorded.
 
 ## Versioning
 
