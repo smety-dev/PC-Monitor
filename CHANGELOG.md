@@ -10,7 +10,8 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 - Polished tables, buttons, dialogs, gaming overlay and FPS metric layout.
 - Compact overview metric cards, explicit units, live disk and network throughput, device details and a single clear page status.
 - Separate FPS/overlay tabs and benchmark recording/results/graphs tabs with progress feedback and A/B summaries.
-- Four offscreen GUI smoke tests with synthetic data and isolated preferences.
+- Five offscreen GUI smoke tests with synthetic data and isolated preferences.
+- Fixed 60-second overview timeline, selectable metrics, localized axis labels and hover readouts; gaps in sampling remain visible.
 
 ### Notes
 - No new dependencies or capture changes. Windows visual verification pending.
