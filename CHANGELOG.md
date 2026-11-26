@@ -4,6 +4,9 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 
 ## [0.8.3]
 
+### Fixed
+- Export readable Czech column names and decimal commas to avoid Czech Excel interpreting decimal measurements as dates.
+
 ### Added
 - Recording page with start/stop controls, file selection, duration and sample count.
 - Local CSV export of system utilization, CPU frequency and aggregate disk/network rates.
