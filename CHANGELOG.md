@@ -8,7 +8,9 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 - Unified dark palette, installed modern font selection, chart typography and spacing tokens.
 - One consistent navigation icon tint in all Qt modes and states; scrollable sidebar for smaller windows.
 - Polished tables, buttons, dialogs, gaming overlay and FPS metric layout.
-- Benchmark A/B summary cards and direction-aware comparison colors.
+- Compact overview metric cards, explicit units, live disk and network throughput, device details and a single clear page status.
+- Separate FPS/overlay tabs and benchmark recording/results/graphs tabs with progress feedback and A/B summaries.
+- Four offscreen GUI smoke tests with synthetic data and isolated preferences.
 
 ### Notes
 - No new dependencies or capture changes. Windows visual verification pending.
