@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.8.1 — Early development**
+**Current version: v0.8.2 — Early development**
 
 ## Features
 
@@ -16,6 +16,7 @@ A lightweight Windows application for real-time hardware performance monitoring,
 - OS-reported CPU frequency and per-logical-processor utilization
 - Local disk capacity and aggregate disk read/write throughput
 - Aggregate network receive/send throughput
+- Read-only process manager with CPU and RAM usage, PID search and sortable columns
 
 ## Requirements
 
@@ -35,11 +36,15 @@ The legacy terminal monitor is also available with `python main.py`. It does not
 
 ## Dashboard
 
-The sidebar switches between the overview, CPU, disks and network pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The dashboard uses existing Tkinter and matplotlib dependencies, with no extra installation required.
+The sidebar switches between the overview, CPU, disks, network and process pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The dashboard uses existing Tkinter and matplotlib dependencies, with no extra installation required.
 
 ## Advanced monitoring
 
 The hardware pages use psutil without requesting administrator privileges or installing a driver. Some metrics may be unavailable depending on system permissions and hardware. CPU frequency on Windows is OS-reported and may not represent instantaneous per-core clock speed. Disk and network throughput are aggregate counter differences over elapsed monotonic time; the first sample or a counter reset displays unavailable. Temperature monitoring remains experimental in a separate branch.
+
+## Process manager
+
+Search by process name or PID and click column headings to sort. CPU is normalized to the total logical CPU capacity (0–100%); the first sample is unavailable until a second reading. RAM is the resident working set (RSS) in MiB, not private memory. Protected processes may have unavailable readings. Sampling runs in a background thread; no process termination, administrator elevation or additional dependency is requested.
 
 ## Versioning
 
