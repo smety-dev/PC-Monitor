@@ -38,6 +38,12 @@ QScrollArea { border: 0; }
 QScrollBar:vertical { background: #101624; width: 9px; margin: 0; }
 QScrollBar::handle:vertical { background: #34445e; min-height: 24px; border-radius: 4px; }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+QCheckBox { spacing: 9px; background: transparent; padding: 3px 0; }
+QCheckBox::indicator { width: 16px; height: 16px; border: 1px solid #405576; border-radius: 4px; background: #192334; }
+QCheckBox::indicator:checked { background: #7c9cff; border: 2px solid #a9bdff; }
+QSlider::groove:horizontal { height: 6px; background: #26344a; border-radius: 3px; }
+QSlider::sub-page:horizontal { background: #7c9cff; border-radius: 3px; }
+QSlider::handle:horizontal { background: #edf2fb; width: 16px; margin: -5px 0; border-radius: 8px; }
 QProgressBar { background: #26344a; border: 0; border-radius: 5px; min-height: 10px; max-height: 10px; }
 QProgressBar::chunk { background: #7c9cff; border-radius: 5px; }
 """
