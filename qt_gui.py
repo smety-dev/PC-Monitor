@@ -1,9 +1,10 @@
 """PC Monitor Qt desktop application."""
 import sys
 import time
+from pathlib import Path
 from collections import deque
 import psutil
-from PySide6.QtCore import QTimer, QByteArray, Qt, QSize
+from PySide6.QtCore import QTimer, QByteArray, Qt, QSize, QSettings
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QVBoxLayout,
     QHBoxLayout, QGridLayout, QStackedWidget, QButtonGroup, QScrollArea, QProgressBar, QComboBox)
 from qt_theme import BLUE, GREEN, ORANGE, MUTED, DANGER, SPACE, MetricCard, card, label, button, navigation_icon, configure_theme
@@ -38,12 +39,12 @@ def rate(value):
 
 
 class Window(QMainWindow):
-    def __init__(self):
+    def __init__(self, prefs=None):
         super().__init__()
         self.setWindowTitle(f"PC Monitor — {__version__}")
         self.resize(1250,820)
         self.setMinimumSize(900,650)
-        self.prefs = Preferences()
+        self.prefs = prefs if prefs is not None else Preferences()
         self.monitor = Monitor()
         self.history = deque(maxlen=61)
         root = QWidget()
@@ -464,14 +465,37 @@ class Window(QMainWindow):
 def main():
     configure_logging()
     LOG.info("PC Monitor %s started", __version__)
-    app = QApplication(sys.argv)
+    # Explicit packaging smoke check: isolated preferences, no FPS capture.
+    smoke = len(sys.argv) == 3 and sys.argv[1] == "--smoke-test"
+    marker = Path(sys.argv[2]).resolve() if smoke else None
+    app = QApplication([sys.argv[0]] if smoke else sys.argv)
     app.setApplicationName("PC Monitor")
     app.setApplicationVersion(__version__)
     app.setWindowIcon(app_icon())
     family = configure_theme(app)
     configure_chart_fonts(family)
-    window = Window()
+    prefs = Preferences(QSettings(str(marker.with_suffix(".ini")), QSettings.Format.IniFormat)) if smoke else None
+    window = Window(prefs=prefs)
     window.show()
+    if smoke:
+        def verify():
+            try:
+                if window.gaming.fps.path is None:
+                    raise RuntimeError("Bundled PresentMon missing or hash mismatch")
+                for index in range(len(window.views)):
+                    window.navigate(index)
+                    window.refresh()
+                window.navigate(0)
+                window.plot.draw()
+                window.grab().save(str(marker.with_suffix(".png")), "PNG")
+                window.close()
+                marker.write_text("OK " + __version__, encoding="utf-8")
+                app.exit(0)
+            except Exception:
+                LOG.exception("Packaged smoke test failed")
+                window.close()
+                app.exit(1)
+        QTimer.singleShot(2500, verify)
     return app.exec()
 
 
