@@ -33,10 +33,11 @@ A lightweight Windows application for real-time hardware performance monitoring,
 
 ```powershell
 python -m pip install -r requirements.txt
+python presentmon_bundle.py
 python main.py
 ```
 
-`main.py` is the canonical entry point. It launches the Qt desktop application.
+`main.py` is the canonical entry point. It launches the Qt desktop application. The preparation command is needed only for a source checkout (once); it downloads the fixed official PresentMon binary and upstream notices, validates the published SHA-256 and stores the files locally. Hardware monitoring can still run without PresentMon. No downloads or elevation occur at app startup.
 
 ## Dashboard
 
@@ -64,13 +65,21 @@ Open Gaming and enable Gaming Mode. Choose a connected monitor, corner, backgrou
 
 ## FPS & frametime capture (optional)
 
-1. Download the official **console binary** [PresentMon-2.3.1-x64.exe](https://github.com/GameTechDev/PresentMon/releases/download/v2.3.1/PresentMon-2.3.1-x64.exe) (not the GUI installer). This version is the integration target; other versions are not validated. Select it in Gaming → Měření snímků using Vybrat EXE, or place it in `tools/PresentMon-2.3.1-x64.exe` beside the source. The executable is not bundled or downloaded automatically.
+1. PresentMon 2.3.1 is included in the prepared source distribution or installed into a development checkout using `python presentmon_bundle.py`. The Gaming page automatically locates and verifies the included executable; there is no manual EXE picker. If the module is missing, run preparation and click Zkontrolovat modul.
 2. Start your game, click Vybrat hru / aplikaci and search for its actual process (not the launcher) by name, window title or PID. The default filter shows processes with visible titled windows; enable the checkbox to include background processes, and use Obnovit to refresh the list.
 3. Click Spustit FPS měření. Enable Gaming Mode if you want the FPS metrics in the overlay. Stop capture with Zastavit měření or close PC Monitor.
 
-The capture uses the official console application's CSV stdout stream with legacy metrics, a private ETW session, and a selected PID. [PresentMon documentation](https://github.com/GameTechDev/PresentMon/blob/v2.3.1/README-ConsoleApplication.md). No injection or changes to game files. ETW access can be restricted on some systems; use only with authorized permissions, and check the status message if capture fails. No automatic elevation is requested.
+The capture uses the official console application's CSV stdout stream with legacy metrics, a private ETW session, and a selected PID. [PresentMon documentation](https://github.com/GameTechDev/PresentMon/blob/v2.3.1/README-ConsoleApplication.md). No injection or changes to game files. ETW access can be restricted on some systems; use only with authorized permissions, and check the status message if capture fails. No automatic elevation is requested. Confirmed ETW access-denied errors are explained in Czech; on a managed PC request access from IT, or use an authorized administrator account on a personal PC. Other monitoring functions remain available.
 
 FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second window; average FPS uses the recent ten-second window. The 1% low is 1000 divided by the mean interval of the slowest ceil(1% of N) frames in that ten-second window (at least 100 frames). The dominant swap chain by recent present count is selected instead of combining chains. These are present-rate metrics, not displayed FPS, input latency, or an explicit frame-generation measurement. A gap in received data of more than three seconds clears live values. The chart displays the most recent 120 frames; the rolling buffer is bounded to 12,000 frames per swap chain. Capture runs independently of Gaming Mode and the existing hardware CSV recorder; FPS/frametimes are not yet stored in that CSV or its offline analyzer. No extra pip packages are required. Windows capture and game compatibility require practical validation.
+
+## Build a distributable source ZIP
+
+```powershell
+python presentmon_bundle.py --package
+```
+
+The script creates `dist/PC-Monitor-v0.9.1-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
 
 ## Testing
 
@@ -78,7 +87,7 @@ FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second wind
 python -m unittest discover -v
 ```
 
-Run the application and exercise all eight pages after installing requirements. The automated tests cover monitoring, CSV logic, overlay helpers, frame metric calculations and version metadata consistency.
+Run the application and exercise all eight pages after installing requirements. The automated tests cover monitoring, CSV logic, overlay helpers, frame metric calculations, PresentMon bundle verification and error handling, and version metadata consistency.
 
 ## Versioning
 
