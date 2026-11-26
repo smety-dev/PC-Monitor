@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.8.4 — Early development**
+**Current version: v0.9.0 — Early development**
 
 ## Features
 
@@ -19,6 +19,7 @@ A lightweight Windows application for real-time hardware performance monitoring,
 - Read-only process manager with CPU and RAM usage, PID search and sortable columns
 - Local performance CSV recording with selectable sampling interval
 - Offline performance analysis with charts and sample statistics
+- Configurable gaming overlay and optional process-sampling suspension
 
 ## Requirements
 
@@ -38,7 +39,7 @@ python main.py
 
 ## Dashboard
 
-The sidebar switches between the overview, CPU, disks, network, process, recording and analysis pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The new desktop interface uses PySide6 and matplotlib. The obsolete Tkinter and terminal implementations were removed from this development version.
+The sidebar switches between the overview, CPU, disks, network, process, recording, analysis and gaming pages. Charts retain up to 60 GUI samples; GPU data is polled independently and may repeat between updates. Hardware detection runs in the background. The new desktop interface uses PySide6 and matplotlib. 
 
 ## Advanced monitoring
 
@@ -56,13 +57,17 @@ Open Záznam (Recording), select 1, 2, 5 or 10 seconds and choose a new CSV file
 
 Open Analýza and load an original PC Monitor CSV file (Czech or older English headers). The analyzer displays sample counts, last elapsed time, minimum, arithmetic mean and maximum for available values, plus selectable graphs. Invalid elapsed-time rows are skipped; invalid metric cells are unavailable. The graph subsamples very long recordings for responsiveness; statistics use all accepted rows. Files are limited to 500,000 data rows. Utilization hints are heuristic, not a bottleneck diagnosis: FPS, frame times and per-core history are not recorded. No data is uploaded.
 
+## Gaming Mode & Overlay
+
+Open Gaming and enable Gaming Mode. Choose a connected monitor, corner, background opacity and optional CPU frequency/available RAM details. The click-through, non-activating overlay is a separate always-on-top desktop window, with live CPU, GPU 3D, RAM and recording status. It does not inject into games or alter their files. Use windowed or borderless fullscreen mode; exclusive fullscreen and some game/compositor or anti-cheat configurations may hide or disallow desktop overlays. Disable Gaming Mode from the main window (Alt+Tab if necessary); closing the application closes the overlay. Optionally suspend process sampling during play; this resumes on exit from Gaming Mode. The usual hardware sampling and CSV recording continue. No FPS, frame times or temperatures are measured, and performance improvements are not guaranteed. No administrator rights or new runtime dependencies are required. Overlay settings are session-only.
+
 ## Testing
 
 ```powershell
 python -m unittest discover -v
 ```
 
-Run the application and exercise all seven pages after installing requirements. The automated tests cover monitoring, CSV logic and version metadata consistency.
+Run the application and exercise all eight pages after installing requirements. The automated tests cover monitoring, CSV logic, overlay helpers and version metadata consistency.
 
 ## Versioning
 
@@ -71,7 +76,7 @@ The application version is defined in [`version.py`](version.py) and displayed b
 ## Planned features
 
 - CPU and GPU temperatures
-- Gaming overlay
+- Actual FPS and frametime measurement
 - Standalone executable
 
 ## About
