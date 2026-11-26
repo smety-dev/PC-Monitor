@@ -64,7 +64,7 @@ class Gauge(tk.Frame):
 def configure_style(root):
     style = ttk.Style(root)
     style.theme_use("clam")
-    style.configure("Dashboard.TProgressbar", troughcolor=TRACK,
+    style.configure("Dashboard.Horizontal.TProgressbar", troughcolor=TRACK,
                     background=BLUE, bordercolor=PANEL, lightcolor=BLUE,
                     darkcolor=BLUE, thickness=8)
     style.configure("Dark.Vertical.TScrollbar", background=TRACK,
