@@ -2,6 +2,18 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.9.0]
+
+### Added
+- Gaming Mode workspace with click-through desktop overlay, live preview, monitor and corner selection, adjustable background opacity and optional details.
+- CPU, GPU 3D, RAM and active recording indicators using the existing monitoring service.
+- Optional suspension of process sampling while gaming; hardware and CSV recording remain active.
+- Six unit tests for overlay helpers.
+
+### Notes
+- No new runtime dependencies. Windowed/borderless games are the intended use; exclusive fullscreen and anti-cheat compatibility are not guaranteed.
+- FPS, frametimes and temperatures are not measured. Windows overlay runtime validation pending.
+
 ## [0.8.4]
 
 ### Added
@@ -19,7 +31,7 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 - Added automated version consistency checks.
 
 ### Notes
-- Initial Qt interface confirmed by the project owner on Windows; final cleanup requires regression testing.
+- Qt interface and 21 unit tests confirmed by the project owner on Windows.
 
 ## [0.8.3]
 
