@@ -3,17 +3,16 @@ import sys
 from collections import deque
 import psutil
 from PySide6.QtCore import QTimer, QByteArray, Qt, QSize
-from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QVBoxLayout,
     QHBoxLayout, QGridLayout, QStackedWidget, QButtonGroup, QScrollArea, QProgressBar)
-from qt_theme import STYLE, BLUE, GREEN, ORANGE, MetricCard, card, label, button, navigation_icon
+from qt_theme import BLUE, GREEN, ORANGE, SPACE, MetricCard, card, label, button, navigation_icon, configure_theme
 from qt_monitor import Monitor
 from diagnostics import configure_logging, LOG
 from qt_gaming import GamingPage
 from qt_benchmark import BenchmarkPage
 from qt_settings import SettingsPage
 from preferences import Preferences
-from qt_pages import Processes, Recording, Analysis, Plot, fmt
+from qt_pages import Processes, Recording, Analysis, Plot, fmt, configure_chart_fonts
 from version import __version__
 
 
@@ -21,7 +20,7 @@ def page():
     widget = QWidget()
     layout = QVBoxLayout(widget)
     layout.setContentsMargins(0,0,0,0)
-    layout.setSpacing(14)
+    layout.setSpacing(2 * SPACE)
     return widget, layout
 
 
@@ -52,18 +51,28 @@ class Window(QMainWindow):
         shell.setSpacing(0)
         sidebar = QFrame()
         sidebar.setObjectName("sidebar")
-        sidebar.setFixedWidth(218)
-        nav = QVBoxLayout(sidebar)
-        nav.setContentsMargins(18,26,18,20)
-        nav.setSpacing(5)
-        nav.addWidget(label("PC Monitor","section"))
-        nav.addWidget(label("PERFORMANCE STUDIO","muted"))
-        nav.addSpacing(16)
-        nav.addWidget(label("MONITORING","muted"))
+        sidebar.setFixedWidth(224)
+        side = QVBoxLayout(sidebar)
+        side.setContentsMargins(16, 24, 16, 16)
+        side.setSpacing(SPACE)
+        side.addWidget(label("PC Monitor", "brand"))
+        side.addWidget(label("PERFORMANCE STUDIO", "eyebrow"))
+        side.addSpacing(SPACE)
+        nav_content = QWidget()
+        nav_content.setObjectName("navContent")
+        nav = QVBoxLayout(nav_content)
+        nav.setContentsMargins(0, 0, 0, 0)
+        nav.setSpacing(4)
+        self.nav_scroll = scroll(nav_content)
+        self.nav_scroll.setObjectName("navScroll")
+        self.nav_scroll.viewport().setObjectName("navViewport")
+        self.nav_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        side.addWidget(self.nav_scroll, 1)
+        nav.addWidget(label("MONITORING", "eyebrow"))
         shell.addWidget(sidebar)
         main = QWidget()
         body = QVBoxLayout(main)
-        body.setContentsMargins(28,24,28,24)
+        body.setContentsMargins(24, 24, 24, 24)
         body.setSpacing(16)
         shell.addWidget(main,1)
         self.title = label("Přehled systému","title")
@@ -98,13 +107,15 @@ class Window(QMainWindow):
         self.group.setExclusive(True)
         for i,(name,title,widget,icon) in enumerate(self.views):
             if i == 5:
-                nav.addSpacing(10)
-                nav.addWidget(label("SESSION","muted"))
+                nav.addSpacing(2 * SPACE)
+                nav.addWidget(label("SESSION", "eyebrow"))
             self.stack.addWidget(widget)
             item = button(name)
             item.setObjectName("nav")
             item.setIcon(navigation_icon(icon))
             item.setIconSize(QSize(20, 20))
+            item.setFixedHeight(40)
+            item.setAccessibleName(name)
             item.setCheckable(True)
             self.group.addButton(item,i)
             item.clicked.connect(lambda checked=False,index=i:self.navigate(index))
@@ -112,8 +123,9 @@ class Window(QMainWindow):
         nav.addStretch()
         self.live = label("●  Živé měření","muted")
         self.live.setStyleSheet("color: "+GREEN)
-        nav.addWidget(self.live)
-        nav.addWidget(label("VERSION "+__version__,"muted"))
+        side.addSpacing(SPACE)
+        side.addWidget(self.live)
+        side.addWidget(label("VERSION "+__version__, "eyebrow"))
         last = self.prefs.get("startup/last_page") if self.prefs.get("startup/remember_page") else "Přehled"
         index = next((i for i, view in enumerate(self.views) if view[0] == last), 0)
         self.navigate(index)
@@ -216,7 +228,9 @@ class Window(QMainWindow):
         return True
 
     def navigate(self,index):
-        self.group.button(index).setChecked(True)
+        selected = self.group.button(index)
+        selected.setChecked(True)
+        self.nav_scroll.ensureWidgetVisible(selected, 0, 4)
         self.stack.setCurrentIndex(index)
         self.monitor.set_process_visible(index == 4 and not self.isMinimized())
         self.prefs.set("startup/last_page", self.views[index][0])
@@ -328,9 +342,8 @@ def main():
     configure_logging()
     LOG.info("PC Monitor %s started", __version__)
     app = QApplication(sys.argv)
-    app.setStyle("Fusion")
-    app.setFont(QFont("Segoe UI",10))
-    app.setStyleSheet(STYLE)
+    family = configure_theme(app)
+    configure_chart_fonts(family)
     window = Window()
     window.show()
     return app.exec()
