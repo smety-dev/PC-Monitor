@@ -1,10 +1,11 @@
 """PC Monitor Qt desktop application."""
 import sys
+import time
 from collections import deque
 import psutil
 from PySide6.QtCore import QTimer, QByteArray, Qt, QSize
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QVBoxLayout,
-    QHBoxLayout, QGridLayout, QStackedWidget, QButtonGroup, QScrollArea, QProgressBar)
+    QHBoxLayout, QGridLayout, QStackedWidget, QButtonGroup, QScrollArea, QProgressBar, QComboBox)
 from qt_theme import BLUE, GREEN, ORANGE, MUTED, DANGER, SPACE, MetricCard, card, label, button, navigation_icon, configure_theme
 from qt_monitor import Monitor
 from diagnostics import configure_logging, LOG
@@ -43,7 +44,7 @@ class Window(QMainWindow):
         self.setMinimumSize(900,650)
         self.prefs = Preferences()
         self.monitor = Monitor()
-        self.history = deque(maxlen=60)
+        self.history = deque(maxlen=61)
         root = QWidget()
         self.setCentralWidget(root)
         shell = QHBoxLayout(root)
@@ -170,7 +171,12 @@ class Window(QMainWindow):
         heading = QHBoxLayout()
         heading.addWidget(label("Vytížení v čase", "section"))
         heading.addStretch()
-        heading.addWidget(label("POSLEDNÍCH 60 VZORKŮ", "eyebrow"))
+        heading.addWidget(label("60 s", "eyebrow"))
+        self.history_filter = QComboBox()
+        self.history_filter.addItems(["Všechny metriky", "CPU", "RAM", "GPU"])
+        self.history_filter.setAccessibleName("Zobrazené metriky grafu")
+        self.history_filter.currentIndexChanged.connect(lambda *_: self.render_page())
+        heading.addWidget(self.history_filter)
         body.addLayout(heading)
         self.plot = Plot()
         self.plot.setMinimumHeight(220)
@@ -324,7 +330,10 @@ class Window(QMainWindow):
             cpu,ram = basic
             gpu = self.monitor.gpu
             self.recording.capture(cpu,ram,gpu,self.monitor.advanced)
-            self.history.append((cpu,ram.percent,gpu))
+            now = time.monotonic()
+            self.history.append((now, cpu, ram.percent, gpu))
+            while self.history and self.history[0][0] < now - 60:
+                self.history.popleft()
         recording = self.recording.recorder.active
         self.benchmark.refresh(self.stack.currentIndex() == 8 and not self.isMinimized())
         benchmarking = self.gaming.fps.capture.benchmark.active
@@ -353,7 +362,22 @@ class Window(QMainWindow):
             rates = (*(sample.get("disk_rates") or (None, None)), *(sample.get("net_rates") or (None, None)))
             for widget, value in zip(self.activity_values, rates):
                 widget.setText(rate(value) if value is not None else "— MiB/s")
-            self.plot.render(list(range(1-len(self.history),1)),[(n,c,[r[j] for r in self.history]) for j,(n,c) in enumerate((("CPU",BLUE),("RAM",ORANGE),("GPU",GREEN)))],True,"Vzorky · nejnovější vpravo")
+            selected = self.history_filter.currentIndex()
+            if self.history:
+                latest = self.history[-1][0]
+                x = []
+                samples = []
+                for timestamp, *values in self.history:
+                    elapsed = timestamp - latest
+                    if x and elapsed - x[-1] > 3:
+                        x.append((x[-1] + elapsed) / 2)
+                        samples.append((None, None, None))
+                    x.append(elapsed)
+                    samples.append(values)
+                lines = [(name, color, [row[j] for row in samples])
+                         for j, (name, color) in enumerate((("CPU", BLUE), ("RAM", ORANGE), ("GPU", GREEN)))
+                         if selected == 0 or selected == j + 1]
+                self.plot.render(x, lines, True, "", rolling_seconds=60)
         elif index == 1:
             frequency = sample.get("frequency")
             self.freq.setText(fmt(frequency,0)+" MHz" if frequency is not None else "N/A")
