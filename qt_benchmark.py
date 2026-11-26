@@ -6,7 +6,7 @@ from threading import Event
 
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QFileDialog, QHeaderView
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QBrush
 from diagnostics import LOG
 from gaming_benchmark import DURATIONS, analyze_benchmark, relative_change
 from qt_dialogs import ErrorDialog
@@ -255,7 +255,7 @@ class BenchmarkPage(QWidget):
             change_colors.append(color)
         populate(self.t, rows)
         for i, color in enumerate(change_colors):
-            self.t.item(i, 3).setForeground(QColor(color))
+            self.t.item(i, 3).setForeground(QBrush(QColor(color)))
         present = [(name, color, result) for name, color, result in
                    (("A", BLUE, a), ("B", GREEN, b)) if result]
         length = max((len(result.fps_series) for _, _, result in present), default=0)
