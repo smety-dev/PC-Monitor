@@ -2,6 +2,24 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.9.1]
+
+### Added
+- Optional official PresentMon 2.3.1 console integration with selected process/PID and private ETW session.
+- Live present-rate FPS, rolling average, 1% low, frametime chart and overlay metrics.
+- Bounded per-swap-chain frame buffers, dominant-chain selection, stale-data handling and seven unit tests.
+
+### Changed
+- Searchable capture-target dialog with window-title filter, PID search and optional background processes.
+- Automatic discovery and SHA-256 verification of the bundled PresentMon; removed the manual executable picker.
+- Source distribution builder includes PresentMon and upstream licensing notices.
+- Localized ETW permission errors and four additional unit tests.
+- Themed Qt error dialog with expandable, copyable technical details; routine capture statuses remain inline.
+
+### Notes
+- PresentMon is acquired at build/setup time from the fixed official release and included in the source ZIP. No new pip dependencies. ETW access-denied was confirmed on a restricted Windows PC; successful capture still requires validation on an authorized PC.
+- Hardware CSV format is unchanged; frame metrics are live only. Present rate is not displayed FPS.
+
 ## [0.9.0]
 
 ### Added
@@ -12,7 +30,7 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 
 ### Notes
 - No new runtime dependencies. Windowed/borderless games are the intended use; exclusive fullscreen and anti-cheat compatibility are not guaranteed.
-- FPS, frametimes and temperatures are not measured. Windows overlay runtime validation pending.
+- FPS, frametimes and temperatures were not measured in this release. Overlay operation confirmed by the project owner on Windows.
 
 ## [0.8.4]
 
