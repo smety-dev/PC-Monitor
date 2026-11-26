@@ -15,6 +15,7 @@ from qt_settings import SettingsPage
 from preferences import Preferences
 from qt_pages import Processes, Recording, Analysis, Plot, fmt, configure_chart_fonts
 from version import __version__
+from app_identity import app_icon
 
 
 def page():
@@ -464,6 +465,9 @@ def main():
     configure_logging()
     LOG.info("PC Monitor %s started", __version__)
     app = QApplication(sys.argv)
+    app.setApplicationName("PC Monitor")
+    app.setApplicationVersion(__version__)
+    app.setWindowIcon(app_icon())
     family = configure_theme(app)
     configure_chart_fonts(family)
     window = Window()
