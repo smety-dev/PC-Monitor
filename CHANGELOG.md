@@ -4,6 +4,9 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 
 ## [0.8.1]
 
+### Fixed
+- Corrected horizontal progressbar style inheritance that interrupted dashboard refresh when opening hardware pages.
+
 ### Changed
 - Modern dark dashboard with sidebar navigation and circular utilization gauges.
 - Dedicated CPU, disk and network pages with visual meters instead of a text dump.
