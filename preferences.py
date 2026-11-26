@@ -3,6 +3,7 @@ from gaming_metrics import CORNERS
 
 PAGES = ("Přehled", "Procesor", "Disky", "Síť", "Procesy", "Záznam", "Analýza", "Gaming", "Benchmark", "Nastavení")
 DEFAULTS = {
+    "ui/language": "auto",
     "startup/remember_page": True,
     "startup/remember_geometry": True,
     "startup/last_page": "Přehled",
@@ -36,6 +37,8 @@ def normalize(key, value):
         if key == "overlay/opacity":
             return min(100, max(35, number))
         return number if number in (1, 2, 5, 10) else default
+    if key == "ui/language":
+        return value if value in ("auto", "cs", "en") else default
     if key == "overlay/corner":
         return value if isinstance(value, str) and value in CORNERS else default
     if key == "startup/last_page":
