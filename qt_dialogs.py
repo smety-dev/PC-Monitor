@@ -29,7 +29,7 @@ class ErrorDialog(QDialog):
         if details:
             self.details = QPlainTextEdit()
             self.details.setReadOnly(True)
-            self.details.setPlainText(details)
+            self.details.setPlainText(tr(details))
             self.details.setMaximumHeight(160)
             self.details.hide()
             body.addWidget(self.details)
