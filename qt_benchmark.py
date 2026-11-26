@@ -7,7 +7,7 @@ from threading import Event
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QFileDialog
 from diagnostics import LOG
-from gaming_benchmark import DURATIONS, analyze_benchmark
+from gaming_benchmark import DURATIONS, analyze_benchmark, relative_change
 from qt_dialogs import ErrorDialog
 from qt_pages import Plot, table, populate
 from qt_theme import card, label, button, BLUE, GREEN, ORANGE
@@ -96,7 +96,7 @@ class BenchmarkPage(QWidget):
         self.analysis_status = label("Načti jedno nebo dvě měření.", "muted")
         self.analysis_status.setWordWrap(True)
         body.addWidget(self.analysis_status)
-        self.t = table(["Metrika", "A", "B", "B proti A"])
+        self.t = table(["Metrika", "A", "B", "Změna B/A (%)"])
         self.t.setMinimumHeight(465)
         body.addWidget(self.t)
         layout.addWidget(panel)
@@ -197,7 +197,7 @@ class BenchmarkPage(QWidget):
             i = self.loading_slot
             self.results[i] = result
             self.file_labels[i].setText(f"{'AB'[i]}  •  {self.loading_name}")
-            self.analysis_status.setText("Porovnávej stejnou scénu a podobnou délku měření.")
+            self.analysis_status.setText("Porovnávej stejnou scénu a podobnou délku měření. Změna je relativní vůči A; při nulovém A není definována.")
             self.render()
         finally:
             self.future = None
@@ -213,21 +213,17 @@ class BenchmarkPage(QWidget):
             ("Medián frametime", "median_ms", " ms", 2, "relative"),
             ("Max. frametime", "peak_ms", " ms", 2, "relative"),
             ("Stutter snímky", "stutters", "", 0, None),
-            ("Podíl stutterů", "stutter_percent", " %", 2, "points"),
+            ("Podíl stutterů", "stutter_percent", " %", 2, "relative"),
             ("Práh stutteru", "threshold_ms", " ms", 2, None),
             ("Snímky ≥ 50 ms", "severe", "", 0, None),
-            ("Podíl snímků ≥ 50 ms", "severe_percent", " %", 2, "points"),
+            ("Podíl snímků ≥ 50 ms", "severe_percent", " %", 2, "relative"),
             ("Snímky (dominantní / celkem)", "count", "", 0, None),
             ("Časový rozsah", "span", " s", 1, None),
         ):
             av = getattr(a, attr) if a else None
             bv = getattr(b, attr) if b else None
-            delta = "—"
-            if av is not None and bv is not None:
-                if compare == "relative" and av != 0:
-                    delta = f"{(bv-av)/av*100:+.1f} %"
-                elif compare == "points":
-                    delta = f"{bv-av:+.2f} p. b."
+            change = relative_change(av, bv) if compare == "relative" else None
+            delta = "—" if change is None else f"{change:+.1f} %"
             left, right = formatted(av, unit, digits), formatted(bv, unit, digits)
             if attr == "count":
                 left = f"{a.count} / {a.total_count}" if a else "—"
