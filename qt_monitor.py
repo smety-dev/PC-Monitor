@@ -9,6 +9,7 @@ from process_metrics import ProcessSampler
 class Monitor:
     def __init__(self):
         self.stop_event = threading.Event()
+        self.gaming = threading.Event()
         self.basic = None
         self.advanced = None
         self.processes = None
@@ -21,6 +22,13 @@ class Monitor:
 
     def close(self):
         self.stop_event.set()
+
+    def set_gaming(self, enabled):
+        if enabled:
+            self.gaming.set()
+            self.processes = None
+        else:
+            self.gaming.clear()
 
     def system(self):
         sampler = Sampler()
@@ -35,8 +43,15 @@ class Monitor:
     def process_worker(self):
         sampler = ProcessSampler()
         while not self.stop_event.is_set():
+            if self.gaming.is_set():
+                self.processes = None
+                sampler = ProcessSampler()
+                while self.gaming.is_set() and not self.stop_event.wait(.5):
+                    pass
+                continue
             try:
-                self.processes = sampler.sample()
+                rows = sampler.sample()
+                self.processes = None if self.gaming.is_set() else rows
             except (psutil.Error, OSError, NotImplementedError):
                 self.processes = None
             self.stop_event.wait(2)

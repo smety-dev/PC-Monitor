@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QVBox
     QStyle)
 from qt_theme import STYLE, BLUE, GREEN, ORANGE, MetricCard, card, label, button
 from qt_monitor import Monitor
+from qt_gaming import GamingPage
 from qt_pages import Processes, Recording, Analysis, Plot, fmt
 from version import __version__
 
@@ -50,10 +51,10 @@ class Window(QMainWindow):
         sidebar.setFixedWidth(218)
         nav = QVBoxLayout(sidebar)
         nav.setContentsMargins(18,26,18,20)
-        nav.setSpacing(8)
+        nav.setSpacing(5)
         nav.addWidget(label("PC Monitor","section"))
         nav.addWidget(label("PERFORMANCE STUDIO","muted"))
-        nav.addSpacing(26)
+        nav.addSpacing(16)
         nav.addWidget(label("MONITORING","muted"))
         shell.addWidget(sidebar)
         main = QWidget()
@@ -71,6 +72,7 @@ class Window(QMainWindow):
         self.processes = Processes()
         self.recording = Recording()
         self.analysis = Analysis()
+        self.gaming = GamingPage(self.monitor, self)
         self.views = [
             ("Přehled","Přehled systému",self.overview(),QStyle.StandardPixmap.SP_ComputerIcon),
             ("Procesor","Procesor",self.cpu_page(),QStyle.StandardPixmap.SP_DriveHDIcon),
@@ -79,12 +81,13 @@ class Window(QMainWindow):
             ("Procesy","Správce procesů",self.processes,QStyle.StandardPixmap.SP_FileDialogDetailedView),
             ("Záznam","Záznam výkonu",self.recording,QStyle.StandardPixmap.SP_DialogSaveButton),
             ("Analýza","Analýza výkonu",scroll(self.analysis),QStyle.StandardPixmap.SP_FileDialogContentsView),
+            ("Gaming","Gaming Mode & Overlay",scroll(self.gaming),QStyle.StandardPixmap.SP_MediaPlay),
         ]
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
         for i,(name,title,widget,icon) in enumerate(self.views):
             if i == 5:
-                nav.addSpacing(20)
+                nav.addSpacing(10)
                 nav.addWidget(label("SESSION","muted"))
             self.stack.addWidget(widget)
             item = button(name)
@@ -183,8 +186,12 @@ class Window(QMainWindow):
             gpu = self.monitor.gpu
             self.recording.capture(cpu,ram,gpu,self.monitor.advanced)
             self.history.append((cpu,ram.percent,gpu))
-        self.live.setText("●  Záznam probíhá" if self.recording.recorder.active else "●  Živé měření")
-        self.render_page()
+        recording = self.recording.recorder.active
+        self.gaming.refresh(basic, self.monitor.gpu, self.monitor.advanced, recording)
+        self.live.setText("●  Záznam probíhá" if recording else
+                          "●  Gaming Mode" if self.gaming.enabled else "●  Živé měření")
+        if not self.isMinimized():
+            self.render_page()
 
     def render_page(self):
         index = self.stack.currentIndex()
@@ -245,10 +252,15 @@ class Window(QMainWindow):
             for widget,value in zip(self.net,sample.get("net_rates") or (None,None)):
                 widget.setText(rate(value))
         elif index == 4:
-            self.processes.refresh(self.monitor.processes)
+            if self.monitor.gaming.is_set():
+                self.processes.refresh(None)
+                self.processes.status.setText("Sběr procesů pozastaven (Gaming Mode)")
+            else:
+                self.processes.refresh(self.monitor.processes)
 
     def closeEvent(self,event):
         self.timer.stop()
+        self.gaming.shutdown()
         self.monitor.close()
         self.recording.finish()
         self.analysis.shutdown()
