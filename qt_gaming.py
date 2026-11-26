@@ -4,7 +4,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QGuiApplication
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QSlider, QCheckBox
 from gaming_metrics import CORNERS, percent, fraction, frequency, available_memory, overlay_position
 from qt_fps import FpsPanel
-from qt_theme import BLUE, GREEN, ORANGE, TEXT, MUTED, GRID, PANEL, DANGER, SPACE, card, label, button, make_font
+from qt_theme import BLUE, GREEN, ORANGE, TEXT, MUTED, GRID, PANEL, DANGER, SPACE, card, label, button, make_font, workspace_tabs, workspace_tab
 
 
 class Overlay(QWidget):
@@ -106,11 +106,17 @@ class GamingPage(QWidget):
         self.enabled = False
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(2 * SPACE)
+        layout.setSpacing(0)
+        self.tabs = workspace_tabs(layout)
+        fps_layout = workspace_tab(self.tabs, "Měření FPS")
+        self.fps = FpsPanel()
+        fps_layout.addWidget(self.fps)
+        fps_layout.addStretch()
+        layout = workspace_tab(self.tabs, "Herní overlay")
 
         panel, body = card()
         header = QHBoxLayout()
-        header.addWidget(label("Gaming Mode", "section"))
+        header.addWidget(label("Zobrazení výkonu ve hře", "section"))
         header.addStretch()
         self.status = label("VYPNUTO", "muted")
         header.addWidget(self.status)
@@ -119,7 +125,7 @@ class GamingPage(QWidget):
         description.setWordWrap(True)
         body.addWidget(description)
         controls = QHBoxLayout()
-        self.toggle = button("Zapnout Gaming Mode", True)
+        self.toggle = button("Zapnout overlay", True)
         self.toggle.clicked.connect(self.toggle_mode)
         controls.addWidget(self.toggle)
         self.minimize = button("Minimalizovat aplikaci")
@@ -169,8 +175,6 @@ class GamingPage(QWidget):
         hint.setWordWrap(True)
         body.addWidget(hint)
         layout.addWidget(panel)
-        self.fps = FpsPanel()
-        layout.addWidget(self.fps)
         layout.addStretch()
 
         self.screen.currentIndexChanged.connect(self.apply_settings)
@@ -252,7 +256,7 @@ class GamingPage(QWidget):
             self.prefs.set("gaming/low_overhead", self.low_overhead.isChecked())
             self.prefs.sync()
         self.monitor.set_gaming(self.enabled and self.low_overhead.isChecked())
-        self.toggle.setText("Vypnout Gaming Mode" if self.enabled else "Zapnout Gaming Mode")
+        self.toggle.setText("Vypnout overlay" if self.enabled else "Zapnout overlay")
         self.status.setText("AKTIVNÍ" if self.enabled else "VYPNUTO")
         self.status.setStyleSheet("color: " + (GREEN if self.enabled else MUTED))
         if self.enabled:
@@ -263,8 +267,10 @@ class GamingPage(QWidget):
 
     def refresh(self, basic, gpu, advanced, recording, window_visible=True):
         visible = window_visible and self.isVisible()
-        stats = self.fps.refresh(visible, visible or (self.enabled and self.fps_visible.isChecked()))
-        if visible:
+        fps_visible = visible and self.tabs.currentIndex() == 0
+        preview_visible = visible and self.tabs.currentIndex() == 1
+        stats = self.fps.refresh(fps_visible, fps_visible or ((self.enabled or preview_visible) and self.fps_visible.isChecked()))
+        if preview_visible:
             self.preview.set_metrics(basic, gpu, advanced, recording, stats)
         if self.enabled:
             self.position_overlay()
