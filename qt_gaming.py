@@ -225,7 +225,8 @@ class GamingPage(QWidget):
             g = screen.geometry()
             x, y = overlay_position((g.x(), g.y(), g.width(), g.height()),
                                     (self.overlay.width(), self.overlay.height()), self.corner.currentText())
-            self.overlay.move(x, y)
+            if self.overlay.x() != x or self.overlay.y() != y:
+                self.overlay.move(x, y)
 
     def apply_settings(self, *_):
         value = self.opacity.value()
@@ -258,9 +259,10 @@ class GamingPage(QWidget):
         else:
             self.overlay.hide()
 
-    def refresh(self, basic, gpu, advanced, recording):
-        stats = self.fps.refresh()
-        if self.isVisible():
+    def refresh(self, basic, gpu, advanced, recording, window_visible=True):
+        visible = window_visible and self.isVisible()
+        stats = self.fps.refresh(visible, visible or (self.enabled and self.fps_visible.isChecked()))
+        if visible:
             self.preview.set_metrics(basic, gpu, advanced, recording, stats)
         if self.enabled:
             self.position_overlay()
