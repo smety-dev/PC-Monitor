@@ -2,12 +2,11 @@
 import sys
 from collections import deque
 import psutil
-from PySide6.QtCore import QTimer, QByteArray, Qt
+from PySide6.QtCore import QTimer, QByteArray, Qt, QSize
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QVBoxLayout,
-    QHBoxLayout, QGridLayout, QStackedWidget, QButtonGroup, QScrollArea, QProgressBar,
-    QStyle)
-from qt_theme import STYLE, BLUE, GREEN, ORANGE, MetricCard, card, label, button
+    QHBoxLayout, QGridLayout, QStackedWidget, QButtonGroup, QScrollArea, QProgressBar)
+from qt_theme import STYLE, BLUE, GREEN, ORANGE, MetricCard, card, label, button, navigation_icon
 from qt_monitor import Monitor
 from diagnostics import configure_logging, LOG
 from qt_gaming import GamingPage
@@ -84,16 +83,16 @@ class Window(QMainWindow):
         self.recording.interval.setCurrentText(str(self.prefs.get("recording/interval")))
         self.recording.interval.currentTextChanged.connect(self.save_recording_interval)
         self.views = [
-            ("Přehled","Přehled systému",self.overview(),QStyle.StandardPixmap.SP_ComputerIcon),
-            ("Procesor","Procesor",self.cpu_page(),QStyle.StandardPixmap.SP_DriveHDIcon),
-            ("Disky","Úložiště",self.disk_page(),QStyle.StandardPixmap.SP_DriveHDIcon),
-            ("Síť","Síťový provoz",self.network_page(),QStyle.StandardPixmap.SP_DriveNetIcon),
-            ("Procesy","Správce procesů",self.processes,QStyle.StandardPixmap.SP_FileDialogDetailedView),
-            ("Záznam","Záznam výkonu",self.recording,QStyle.StandardPixmap.SP_DialogSaveButton),
-            ("Analýza","Analýza výkonu",scroll(self.analysis),QStyle.StandardPixmap.SP_FileDialogContentsView),
-            ("Gaming","Gaming Mode & Overlay",scroll(self.gaming),QStyle.StandardPixmap.SP_MediaPlay),
-            ("Benchmark","Gaming Performance Analyzer",scroll(self.benchmark),QStyle.StandardPixmap.SP_FileDialogContentsView),
-            ("Nastavení","Nastavení aplikace",scroll(self.settings_page),QStyle.StandardPixmap.SP_FileDialogDetailedView),
+            ("Přehled","Přehled systému",self.overview(),"overview"),
+            ("Procesor","Procesor",self.cpu_page(),"cpu"),
+            ("Disky","Úložiště",self.disk_page(),"disks"),
+            ("Síť","Síťový provoz",self.network_page(),"network"),
+            ("Procesy","Správce procesů",self.processes,"processes"),
+            ("Záznam","Záznam výkonu",self.recording,"recording"),
+            ("Analýza","Analýza výkonu",scroll(self.analysis),"analysis"),
+            ("Gaming","Gaming Mode & Overlay",scroll(self.gaming),"gaming"),
+            ("Benchmark","Gaming Performance Analyzer",scroll(self.benchmark),"benchmark"),
+            ("Nastavení","Nastavení aplikace",scroll(self.settings_page),"settings"),
         ]
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
@@ -104,7 +103,8 @@ class Window(QMainWindow):
             self.stack.addWidget(widget)
             item = button(name)
             item.setObjectName("nav")
-            item.setIcon(self.style().standardIcon(icon))
+            item.setIcon(navigation_icon(icon))
+            item.setIconSize(QSize(20, 20))
             item.setCheckable(True)
             self.group.addButton(item,i)
             item.clicked.connect(lambda checked=False,index=i:self.navigate(index))
