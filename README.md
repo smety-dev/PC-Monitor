@@ -65,7 +65,7 @@ Open Gaming and enable Gaming Mode. Choose a connected monitor, corner, backgrou
 ## FPS & frametime capture (optional)
 
 1. Download the official **console binary** [PresentMon-2.3.1-x64.exe](https://github.com/GameTechDev/PresentMon/releases/download/v2.3.1/PresentMon-2.3.1-x64.exe) (not the GUI installer). This version is the integration target; other versions are not validated. Select it in Gaming → Měření snímků using Vybrat EXE, or place it in `tools/PresentMon-2.3.1-x64.exe` beside the source. The executable is not bundled or downloaded automatically.
-2. Start your game, click Obnovit procesy and choose its actual game process (not the launcher) by name and PID.
+2. Start your game, click Vybrat hru / aplikaci and search for its actual process (not the launcher) by name, window title or PID. The default filter shows processes with visible titled windows; enable the checkbox to include background processes, and use Obnovit to refresh the list.
 3. Click Spustit FPS měření. Enable Gaming Mode if you want the FPS metrics in the overlay. Stop capture with Zastavit měření or close PC Monitor.
 
 The capture uses the official console application's CSV stdout stream with legacy metrics, a private ETW session, and a selected PID. [PresentMon documentation](https://github.com/GameTechDev/PresentMon/blob/v2.3.1/README-ConsoleApplication.md). No injection or changes to game files. ETW access can be restricted on some systems; use only with authorized permissions, and check the status message if capture fails. No automatic elevation is requested.
