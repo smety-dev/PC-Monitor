@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Current version: v0.6.2 — Early development**
+**Current version: v0.8.0 — Early development**
 
 ## Features
 
@@ -12,7 +12,10 @@ A lightweight Windows application for real-time hardware performance monitoring,
 - Live performance charts with up to 60 samples
 - Available and total RAM
 - Physical and logical CPU core detection
-- Dark user interface
+- Dark user interface with utilization and hardware tabs
+- OS-reported CPU frequency and per-logical-processor utilization
+- Local disk capacity and aggregate disk read/write throughput
+- Aggregate network receive/send throughput
 
 ## Requirements
 
@@ -29,6 +32,10 @@ python gui.py
 ```
 
 The legacy terminal monitor is also available with `python main.py`. It does not include the GUI-only features.
+
+## Advanced monitoring
+
+The hardware tab uses psutil without requesting administrator privileges or installing a driver. Some metrics may be unavailable depending on system permissions and hardware. CPU frequency on Windows is OS-reported and may not represent instantaneous per-core clock speed. Disk and network throughput are aggregate counter differences over elapsed monotonic time; the first sample or a counter reset displays unavailable. Temperature monitoring remains experimental in a separate branch.
 
 ## Versioning
 
