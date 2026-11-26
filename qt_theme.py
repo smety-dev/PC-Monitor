@@ -2,7 +2,7 @@
 from PySide6.QtCore import Qt, QRectF, QByteArray
 from PySide6.QtGui import QColor, QPainter, QPen, QFont, QFontDatabase, QIcon, QPixmap, QPalette
 from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtWidgets import QApplication, QWidget, QFrame, QLabel, QVBoxLayout, QHBoxLayout, QProgressBar, QPushButton
+from PySide6.QtWidgets import QApplication, QWidget, QFrame, QLabel, QVBoxLayout, QHBoxLayout, QProgressBar, QPushButton, QTabWidget, QScrollArea
 from string import Template
 
 # Shared color, typography and spacing tokens. Metric hues are semantic, not navigation hues.
@@ -86,6 +86,13 @@ QSlider::sub-page:horizontal { background: $BLUE; border-radius: 3px; }
 QSlider::handle:horizontal { background: $TEXT; width: 16px; margin: -5px 0; border-radius: 8px; }
 QProgressBar { background: $GRID; border: 0; border-radius: 5px; min-height: 10px; max-height: 10px; }
 QProgressBar::chunk { background: $BLUE; border-radius: 5px; }
+QTabWidget::pane { border: 0; background: $BG; top: 0px; }
+QTabBar::tab { background: transparent; color: $MUTED; border: 0; border-bottom: 2px solid transparent; padding: 10px 18px; font-weight: 500; }
+QTabBar::tab:hover { color: $TEXT; background: $SURFACE; }
+QTabBar::tab:selected { color: $TEXT; border-bottom: 2px solid $BLUE; font-weight: 600; }
+QTabBar::tab:focus { background: $SURFACE; }
+QProgressBar#metricBar { min-height: 6px; max-height: 6px; border-radius: 3px; }
+QProgressBar#metricBar::chunk { border-radius: 3px; }
 QToolTip { background: $RAISED; color: $TEXT; border: 1px solid $BORDER; padding: 6px; }
 """).substitute(globals())
 
@@ -175,6 +182,29 @@ def label(text="", role=None):
     return obj
 
 
+def workspace_tab(tabs, title):
+    """One independently scrolling workspace; tabs remain visible when scrolling."""
+    page = QWidget()
+    page.setObjectName("workspace")
+    layout = QVBoxLayout(page)
+    layout.setContentsMargins(0, 16, 8, 0)
+    layout.setSpacing(2 * SPACE)
+    area = QScrollArea()
+    area.setWidgetResizable(True)
+    area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+    area.setWidget(page)
+    tabs.addTab(area, title)
+    return layout
+
+
+def workspace_tabs(parent_layout):
+    tabs = QTabWidget()
+    tabs.setDocumentMode(True)
+    tabs.setElideMode(Qt.TextElideMode.ElideRight)
+    parent_layout.addWidget(tabs, 1)
+    return tabs
+
+
 def card():
     frame = QFrame()
     frame.setObjectName("card")
@@ -215,6 +245,7 @@ class MetricCard(QFrame):
         reading.addStretch()
         layout.addLayout(reading)
         self.bar = QProgressBar()
+        self.bar.setObjectName("metricBar")
         self.bar.setRange(0, 1000)
         self.bar.setTextVisible(False)
         self.bar.setFixedHeight(6)
