@@ -74,6 +74,7 @@ class BenchmarkPage(QWidget):
         body.addWidget(self.status)
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
+        self.progress.setValue(0)
         self.progress.setTextVisible(False)
         body.addWidget(self.progress)
         self.last_file = label("Žádný dokončený záznam", "muted")
@@ -199,6 +200,9 @@ class BenchmarkPage(QWidget):
     def update_controls(self):
         active = self.capture.benchmark.active
         self.capture_status.setText("● FPS měření aktivní" if self.capture.active else "FPS měření není spuštěno")
+        tint = GREEN if self.capture.active else MUTED
+        if self.capture_status.styleSheet() != "color: " + tint:
+            self.capture_status.setStyleSheet("color: " + tint)
         self.start_button.setEnabled(self.capture.active and not active and self.future is None and not self.closing)
         self.stop_button.setEnabled(active)
         self.duration.setEnabled(not active)
