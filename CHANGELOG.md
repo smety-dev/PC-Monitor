@@ -14,6 +14,7 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 - Automatic discovery and SHA-256 verification of the bundled PresentMon; removed the manual executable picker.
 - Source distribution builder includes PresentMon and upstream licensing notices.
 - Localized ETW permission errors and four additional unit tests.
+- Themed Qt error dialog with expandable, copyable technical details; routine capture statuses remain inline.
 
 ### Notes
 - PresentMon is acquired at build/setup time from the fixed official release and included in the source ZIP. No new pip dependencies. ETW access-denied was confirmed on a restricted Windows PC; successful capture still requires validation on an authorized PC.
