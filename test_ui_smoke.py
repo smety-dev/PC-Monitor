@@ -120,3 +120,17 @@ class UISmokeTests(unittest.TestCase):
         self.assertEqual(len(window.plot.ax.lines), 1)
         self.assertEqual(window.plot.ax.lines[0].get_label(), "RAM")
         self.assertEqual(window.plot.ax.lines[0].get_ydata()[-1], 42.0)
+
+    def test_product_icon(self):
+        import struct
+        from app_identity import SIZES, app_icon, write_ico
+        target = self.folder / "test.ico"
+        write_ico(target)
+        raw = target.read_bytes()
+        self.assertEqual(struct.unpack_from("<HHH", raw), (0, 1, len(SIZES)))
+        for i, size in enumerate(SIZES):
+            width, height, _, _, _, bits, length, offset = struct.unpack_from("<BBBBHHII", raw, 6 + i * 16)
+            self.assertEqual((width or 256, height or 256, bits), (size, size, 32))
+            self.assertEqual(raw[offset:offset+8], b"\x89PNG\r\n\x1a\n")
+            self.assertLessEqual(offset + length, len(raw))
+        self.assertFalse(app_icon().isNull())
