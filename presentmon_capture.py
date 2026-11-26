@@ -11,6 +11,7 @@ from presentmon_errors import capture_error
 
 class Capture(QObject):
     changed = Signal(str)
+    failed = Signal(str, str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -26,6 +27,13 @@ class Capture(QObject):
         self.session = None
         self.exe = None
         self.stopping = False
+        self.reported_failure = False
+
+    def report_failure(self, message, details=""):
+        if not self.reported_failure:
+            self.reported_failure = True
+            self.changed.emit("FPS měření selhalo.")
+            self.failed.emit(message, details)
 
     @property
     def active(self):
@@ -34,12 +42,13 @@ class Capture(QObject):
     def start(self, pid):
         if self.active:
             return
+        self.reported_failure = False
         if os.name != "nt":
-            self.changed.emit("PresentMon je dostupný pouze na Windows.")
+            self.report_failure("PresentMon je dostupný pouze na Windows.")
             return
         exe = bundled_exe()
         if exe is None:
-            self.changed.emit("PresentMon není připraven. Spusť python presentmon_bundle.py.")
+            self.report_failure("PresentMon není připraven. Spusť python presentmon_bundle.py.")
             return
         self.exe = str(exe.resolve())
         self.session = "PCMonitor-" + uuid.uuid4().hex
@@ -68,14 +77,20 @@ class Capture(QObject):
         self.stderr = (self.stderr + bytes(self.process.readAllStandardError()).decode("utf-8", errors="replace"))[-2000:]
 
     def error(self, error):
-        if not self.stopping:
-            self.changed.emit("PresentMon: " + self.process.errorString())
+        if not self.stopping and error == QProcess.ProcessError.FailedToStart:
+            self.report_failure("PresentMon se nepodařilo spustit.", self.process.errorString())
 
     def finished(self, code, status):
         self.read_error()
-        if not self.stopping:
-            self.changed.emit(capture_error(code, self.stderr))
         self.stream = None
+        if not self.stopping and not self.reported_failure:
+            if code == 0 and status == QProcess.ExitStatus.NormalExit:
+                self.changed.emit(capture_error(code, self.stderr))
+            else:
+                message = capture_error(code, self.stderr) if code != 0 else "PresentMon neočekávaně skončil."
+                if message.startswith("PresentMon skončil"):
+                    message = f"PresentMon neočekávaně skončil (kód {code})."
+                self.report_failure(message, f"Exit code: {code}\n{self.stderr.strip()}")
 
     def snapshot(self):
         return self.stream.snapshot(time.monotonic()) if self.active and self.stream else None
