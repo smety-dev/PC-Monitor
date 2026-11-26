@@ -132,6 +132,13 @@ class BenchmarkResult:
         return 100 * self.severe / self.count
 
 
+def relative_change(baseline, comparison):
+    """Percentage change relative to A; a zero baseline cannot define a change."""
+    if baseline is None or comparison is None or baseline == 0:
+        return None
+    return (comparison - baseline) / baseline * 100
+
+
 def check_cancel(cancel):
     if cancel is not None and cancel.is_set():
         raise CancelledError()
