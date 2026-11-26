@@ -26,6 +26,9 @@ class ProcessPage(tk.Frame):
                         foreground=TEXT, rowheight=28, borderwidth=0, font=(FONT, 10))
         style.configure("Processes.Treeview.Heading", background=TRACK,
                         foreground=TEXT, font=(FONT, 10, "bold"), relief="flat")
+        style.map("Processes.Treeview.Heading",
+                  background=[("pressed", "#284568"), ("active", "#40536b")],
+                  foreground=[("pressed", TEXT), ("active", TEXT)])
         style.map("Processes.Treeview", background=[("selected", "#284568")],
                   foreground=[("selected", TEXT)])
         frame = tk.Frame(self, bg=BG)
