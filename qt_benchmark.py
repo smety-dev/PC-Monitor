@@ -5,12 +5,13 @@ from pathlib import Path
 from threading import Event
 
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QFileDialog
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QFileDialog, QHeaderView
+from PySide6.QtGui import QColor
 from diagnostics import LOG
 from gaming_benchmark import DURATIONS, analyze_benchmark, relative_change
 from qt_dialogs import ErrorDialog
 from qt_pages import Plot, table, populate
-from qt_theme import card, label, button, BLUE, GREEN, ORANGE
+from qt_theme import card, label, button, BLUE, GREEN, ORANGE, DANGER, TEXT, SPACE
 
 
 def formatted(value, suffix="", digits=2):
@@ -33,7 +34,7 @@ class BenchmarkPage(QWidget):
         self.timer.timeout.connect(self.poll)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(14)
+        layout.setSpacing(2 * SPACE)
         panel, body = card()
         body.addWidget(label("Herní benchmark", "section"))
         hint = label("Nejprve vyber hru a spusť FPS měření v Gaming. Potom zaznamenej stejnou herní scénu před a po změně nastavení.", "muted")
@@ -96,8 +97,22 @@ class BenchmarkPage(QWidget):
         self.analysis_status = label("Načti jedno nebo dvě měření.", "muted")
         self.analysis_status.setWordWrap(True)
         body.addWidget(self.analysis_status)
+        self.summary_values = []
+        summary = QHBoxLayout()
+        for title, color in (("A · ZÁKLAD", BLUE), ("B · POROVNÁNÍ", GREEN)):
+            tile, tile_body = card()
+            tile_body.addWidget(label(title, "metric"))
+            value = label("— FPS", "value")
+            value.setStyleSheet("color: " + color)
+            tile_body.addWidget(value)
+            detail = label("1% Low: —", "muted")
+            tile_body.addWidget(detail)
+            self.summary_values.append((value, detail))
+            summary.addWidget(tile, 1)
+        body.addLayout(summary)
         self.t = table(["Metrika", "A", "B", "Změna B/A (%)"])
-        self.t.setMinimumHeight(465)
+        self.t.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.t.setMinimumHeight(480)
         body.addWidget(self.t)
         layout.addWidget(panel)
         panel, body = card()
@@ -205,7 +220,11 @@ class BenchmarkPage(QWidget):
 
     def render(self):
         a, b = self.results
+        for result, (value, detail) in zip(self.results, self.summary_values):
+            value.setText(formatted(result.fps if result else None, digits=1) + " FPS")
+            detail.setText("1% Low: " + formatted(result.low if result else None, digits=1) + " FPS")
         rows = []
+        change_colors = []
         for title, attr, unit, digits, compare in (
             ("Průměr FPS", "fps", "", 1, "relative"),
             ("1% Low FPS", "low", "", 1, "relative"),
@@ -229,7 +248,14 @@ class BenchmarkPage(QWidget):
                 left = f"{a.count} / {a.total_count}" if a else "—"
                 right = f"{b.count} / {b.total_count}" if b else "—"
             rows.append((title, left, right, delta.replace(".", ",")))
+            color = TEXT
+            if change is not None and change != 0:
+                better = change > 0 if attr in ("fps", "low") else change < 0
+                color = GREEN if better else DANGER
+            change_colors.append(color)
         populate(self.t, rows)
+        for i, color in enumerate(change_colors):
+            self.t.item(i, 3).setForeground(QColor(color))
         present = [(name, color, result) for name, color, result in
                    (("A", BLUE, a), ("B", GREEN, b)) if result]
         length = max((len(result.fps_series) for _, _, result in present), default=0)
