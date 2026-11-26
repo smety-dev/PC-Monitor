@@ -7,7 +7,11 @@ Notable changes to PC Monitor are documented here. Earlier development milestone
 ### Added
 - Gaming Performance Analyzer workspace with 30/60/120/300-second timed per-frame benchmark recording using the existing PresentMon capture.
 - Separate buffered benchmark CSV; dominant swap-chain statistics, average FPS, 1% low, frametime and adaptive/fixed hitch metrics.
-- Offline A/B comparison with relative changes and percentage-point differences, FPS and peak-frametime charts, synthetic demo generator and nine regression tests.
+- Offline A/B comparison with relative percentage changes, FPS and peak-frametime charts, synthetic demo generator and ten regression tests.
+
+### Fixed
+- Consistent relative percentage changes, symmetric plot margins and centered legends.
+- Mouse-wheel scrolling over read-only charts in scrollable pages.
 
 ### Notes
 - Hardware CSV schema, dependencies and MIT license unchanged. No additional capture session.
