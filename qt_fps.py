@@ -1,4 +1,5 @@
 """FPS capture panel shared with the gaming workspace."""
+from i18n import tr
 import psutil
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout
 from qt_theme import card, label, button, BLUE, GREEN, ORANGE, SPACE
@@ -20,44 +21,44 @@ class FpsPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2 * SPACE)
         panel, body = card()
-        body.addWidget(label("Měření snímků / PresentMon", "section"))
+        body.addWidget(label(tr("Měření snímků / PresentMon"), "section"))
         row = QHBoxLayout()
-        self.binary = label("PresentMon 2.3.1 • ověřený modul" if self.path else "PresentMon chybí nebo není ověřen", "muted")
+        self.binary = label(tr("PresentMon 2.3.1 • ověřený modul") if self.path else tr("PresentMon chybí nebo není ověřen"), "muted")
         self.binary.setWordWrap(True)
         row.addWidget(self.binary, 1)
-        self.check = button("Zkontrolovat modul")
+        self.check = button(tr("Zkontrolovat modul"))
         self.check.clicked.connect(self.check_module)
         row.addWidget(self.check)
         body.addLayout(row)
         row = QHBoxLayout()
-        self.target_label = label("Herní proces nebyl vybrán", "muted")
+        self.target_label = label(tr("Herní proces nebyl vybrán"), "muted")
         self.target_label.setWordWrap(True)
         row.addWidget(self.target_label, 1)
-        self.pick = button("Vybrat hru / aplikaci")
+        self.pick = button(tr("Vybrat hru / aplikaci"))
         self.pick.clicked.connect(self.pick_process)
         row.addWidget(self.pick)
         body.addLayout(row)
         row = QHBoxLayout()
-        self.start_button = button("Spustit FPS měření", True)
+        self.start_button = button(tr("Spustit FPS měření"), True)
         self.start_button.clicked.connect(self.start)
         row.addWidget(self.start_button)
-        self.stop_button = button("Zastavit měření")
+        self.stop_button = button(tr("Zastavit měření"))
         self.stop_button.clicked.connect(self.capture.stop)
         row.addWidget(self.stop_button)
         row.addStretch()
         body.addLayout(row)
-        self.missing_hint = ("Modul chybí nebo je poškozen. Rozbal znovu celý balíček PC Monitor." if FROZEN else
-                             "Spusť python presentmon_bundle.py v terminálu projektu.")
-        self.status = label("Vyber běžící hru." if self.path else self.missing_hint, "muted")
+        self.missing_hint = (tr("Modul chybí nebo je poškozen. Rozbal znovu celý balíček PC Monitor.") if FROZEN else
+                             tr("Spusť python presentmon_bundle.py v terminálu projektu."))
+        self.status = label(tr("Vyber běžící hru.") if self.path else self.missing_hint, "muted")
         self.status.setWordWrap(True)
         body.addWidget(self.status)
-        self.capture.changed.connect(self.status.setText)
+        self.capture.changed.connect(lambda message: self.status.setText(tr(message)))
         self.capture.failed.connect(self.show_capture_error)
         layout.addWidget(panel)
         row = QGridLayout()
         row.setSpacing(SPACE)
         self.values = []
-        for i, (title, color) in enumerate((("FPS / 1 s", GREEN), ("Průměr / 10 s", BLUE), ("1% Low / 10 s", ORANGE), ("Frametime / 1 s", BLUE))):
+        for i, (title, color) in enumerate((("FPS / 1 s", GREEN), (tr("Průměr / 10 s"), BLUE), ("1% Low / 10 s", ORANGE), ("Frametime / 1 s", BLUE))):
             panel, body = card()
             body.addWidget(label(title, "metric"))
             value = label("—", "value")
@@ -69,10 +70,10 @@ class FpsPanel(QWidget):
         row.setColumnStretch(1, 1)
         layout.addLayout(row)
         panel, body = card()
-        body.addWidget(label("Frametime • posledních 120 snímků", "section"))
+        body.addWidget(label(tr("Frametime • posledních 120 snímků"), "section"))
         self.plot = Plot()
         body.addWidget(self.plot)
-        self.note = label("Měříme intervaly Present(), ne počet fyzicky zobrazených snímků.", "muted")
+        self.note = label(tr("Měříme intervaly Present(), ne počet fyzicky zobrazených snímků."), "muted")
         self.note.setWordWrap(True)
         body.addWidget(self.note)
         layout.addWidget(panel)
@@ -83,7 +84,7 @@ class FpsPanel(QWidget):
         if self.error_dialog is not None:
             return
         parent = self.window()
-        self.error_dialog = ErrorDialog(parent, "FPS měření nelze spustit nebo pokračovat",
+        self.error_dialog = ErrorDialog(parent, tr("FPS měření nelze spustit nebo pokračovat"),
                                         message, details)
         self.error_dialog.finished.connect(self.clear_error_dialog)
         self.error_dialog.open()
@@ -93,8 +94,8 @@ class FpsPanel(QWidget):
 
     def check_module(self):
         self.path = bundled_exe()
-        self.binary.setText("PresentMon 2.3.1 • ověřený modul" if self.path else "PresentMon chybí nebo není ověřen")
-        self.status.setText("Modul připraven. Vyber hru." if self.path else self.missing_hint)
+        self.binary.setText(tr("PresentMon 2.3.1 • ověřený modul") if self.path else tr("PresentMon chybí nebo není ověřen"))
+        self.status.setText(tr("Modul připraven. Vyber hru.") if self.path else self.missing_hint)
         self.update_controls()
         if self.path is None:
             self.show_capture_error(self.missing_hint)
@@ -113,15 +114,15 @@ class FpsPanel(QWidget):
     def start(self):
         target = self.target
         if not target or not self.path:
-            self.status.setText("Nejdříve připrav modul a vyber herní proces.")
+            self.status.setText(tr("Nejdříve připrav modul a vyber herní proces."))
             self.show_capture_error(self.status.text())
             return
         pid, created = target
         try:
             if psutil.Process(pid).create_time() != created:
-                raise ValueError("Proces byl nahrazen.")
+                raise ValueError(tr("Proces byl nahrazen."))
         except (psutil.Error, OSError, ValueError):
-            self.status.setText("Proces již neběží. Vyber jej znovu.")
+            self.status.setText(tr("Proces již neběží. Vyber jej znovu."))
             self.show_capture_error(self.status.text())
             return
         self.capture.start(pid)
@@ -143,15 +144,15 @@ class FpsPanel(QWidget):
             for i, (widget, value) in enumerate(zip(self.values, values)):
                 widget.setText("—" if value is None else f"{value:.1f}" + (" ms" if i == 3 else ""))
             if stats:
-                self.status.setText(f"Měřím • {stats.count} vzorků / max. 10 s • swap chain {stats.chain}")
+                self.status.setText(tr(f"Měřím • {stats.count} vzorků / max. 10 s • swap chain {stats.chain}"))
                 self.plot.render(list(range(1-len(stats.graph), 1)),
-                                 [("Frametime", BLUE, stats.graph)], xlabel="Snímky", unit="ms")
+                                 [("Frametime", BLUE, stats.graph)], xlabel=tr("Snímky"), unit="ms")
                 self.had_graph = True
             elif self.had_graph:
                 self.plot.render([], [])
                 self.had_graph = False
                 if self.capture.active:
-                    self.status.setText("Čekám na nové snímky…")
+                    self.status.setText(tr("Čekám na nové snímky…"))
         return stats
 
     def shutdown(self):
