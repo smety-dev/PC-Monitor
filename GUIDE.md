@@ -2,7 +2,7 @@
 
 A lightweight Windows application for real-time hardware performance monitoring, built with Python.
 
-**Guide for v0.9.6 — International Update candidate**
+**Guide for v0.9.7 — GPU Compatibility Hotfix candidate**
 
 ## Features
 
@@ -101,7 +101,7 @@ FPS is 1000 divided by mean MsBetweenPresents in the most recent one-second wind
 python -m pc_monitor.gaming.presentmon_bundle --package
 ```
 
-The script creates `dist/PC-Monitor-v0.9.6-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
+The script creates `dist/PC-Monitor-v0.9.7-source-windows-x64.zip` with application source, runtime requirements, verified official PresentMon executable, original upstream README/license and third-party notices. Extract the entire ZIP before running. Recipients only install the Python dependencies and run `python main.py`; they do not need to download or select PresentMon. This is a Python source distribution, not a standalone EXE installer. The executable is excluded from Git; it is acquired from the pinned official release during preparation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). PC Monitor's own MIT license is unchanged.
 
 ## Interface language
 
@@ -115,7 +115,7 @@ Preferences are stored locally per Windows user using Qt QSettings (native Windo
 
 ## Performance & stability
 
-GPU 3D utilization uses one continuous PowerShell counter stream at two-second intervals instead of launching PowerShell for every sample. Counter failures retry with bounded backoff; stale values expire after eight seconds. The process list is sampled only while its page is visible, and existing Gaming Mode suspension still applies. Disk capacity is refreshed every ten seconds; CPU/RAM and disk/network throughput retain their one-second sampling cadence. Live plots reuse line artists and skip identical updates; hidden gaming previews do not redraw. Frame statistics are cached until new data arrives and use a partial selection of the slowest intervals for 1% low. Offline analysis checks cancellation when the window closes. CSV and PresentMon errors use the shared themed error dialog where applicable.
+GPU 3D utilization uses one continuous PowerShell counter stream at two-second intervals instead of launching PowerShell for every sample. Windows PowerShell starts without an inherited module search path. The provider falls back to WMI when Get-Counter fails or returns three consecutive invalid readings. Counter failures retry with bounded backoff; stale values expire after eight seconds. If GPU data is missing, compare with Task Manager's 3D engine graph and inspect the local diagnostic log. Do not interpret missing values as zero. The WMI provider may also be unavailable on some configurations. The process list is sampled only while its page is visible, and existing Gaming Mode suspension still applies. Disk capacity is refreshed every ten seconds; CPU/RAM and disk/network throughput retain their one-second sampling cadence. Live plots reuse line artists and skip identical updates; hidden gaming previews do not redraw. Frame statistics are cached until new data arrives and use a partial selection of the slowest intervals for 1% low. Offline analysis checks cancellation when the window closes. CSV and PresentMon errors use the shared themed error dialog where applicable.
 
 Local diagnostic messages are written to `%LOCALAPPDATA%/PC Monitor/logs/diagnostics.log` (512 KiB per file, two rotated backups). No telemetry is uploaded; logs do not store raw CSV contents or process lists. If storage is unavailable, diagnostics are disabled without stopping monitoring. Windows GPU counter availability, shutdown behavior and actual performance gains require testing on a real system; no benchmark numbers are claimed.
 

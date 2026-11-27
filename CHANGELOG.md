@@ -2,6 +2,16 @@
 
 Notable changes to PC Monitor are documented here. Earlier development milestones are reconstructed from the known project history; this is not a list of published GitHub Releases.
 
+## [0.9.7]
+
+### GPU Compatibility Hotfix
+- Launch Windows PowerShell with its own module search path, avoiding inherited PowerShell 7 module conflicts.
+- Aggregate valid 3D engine samples without the PowerShell Utility module; fall back to locale-independent WMI when counters fail or three consecutive readings contain no valid 3D data.
+- Log GPU provider errors and preserve missing/stale data handling rather than reporting invented zero values.
+- Add regression coverage for process environment isolation, diagnostics, GPU aggregation and provider fallback.
+- The original correction was reported working on an AMD Radeon RX 6600 XT in PR #19. The final hotfix and portable package still require manual validation.
+- Keep the existing UI, CSV formats, FPS capture and permissions unchanged.
+
 ## [0.9.6]
 
 ### International Update

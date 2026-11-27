@@ -1,6 +1,6 @@
 # Security policy
 
-PC Monitor is a small open-source beta project. The current source version is v0.9.6. See [Releases](https://github.com/smety-dev/PC-Monitor/releases) for the currently published binaries. No formal support window or response-time guarantee is established.
+PC Monitor is a small open-source beta project. The current source version is v0.9.7 (candidate). See [Releases](https://github.com/smety-dev/PC-Monitor/releases) for the currently published binaries. No formal support window or response-time guarantee is established.
 
 ## Reporting a vulnerability
 

@@ -18,32 +18,43 @@ function Write-GpuSample($samples, $nameProperty, $valueProperty) {
         $name = $sample.$nameProperty
         $value = $sample.$valueProperty
         if ($name -match '_engtype_3D$' -and $null -ne $value -and
-            $value -ge 0 -and -not [double]::IsInfinity($value)) {
+            $value -ge 0 -and -not [double]::IsNaN($value) -and -not [double]::IsInfinity($value)) {
             $engine = $name -replace '^pid_\d+_', ''
             $totals[$engine] += [double]$value
         }
     }
     if ($totals.Count -eq 0) {
         [Console]::WriteLine('N/A')
-        return
+        return $false
     }
     $maximum = 0.0
     foreach ($total in $totals.Values) {
         $maximum = [Math]::Max($maximum, $total)
     }
     [Console]::WriteLine($maximum.ToString([Globalization.CultureInfo]::InvariantCulture))
+    return $true
 }
 
+$script:missingSamples = 0
 try {
     Get-Counter '\GPU Engine(*)\Utilization Percentage' -SampleInterval 2 -Continuous |
-        ForEach-Object { Write-GpuSample $_.CounterSamples InstanceName CookedValue }
+        ForEach-Object {
+            if (Write-GpuSample $_.CounterSamples InstanceName CookedValue) {
+                $script:missingSamples = 0
+            } else {
+                $script:missingSamples++
+                if ($script:missingSamples -ge 3) {
+                    throw 'No valid 3D GPU samples in three consecutive readings'
+                }
+            }
+        }
 } catch {
     [Console]::WriteLine('GPU_ERROR: Get-Counter: ' + ($_.Exception.Message -replace '\s+', ' '))
     # WMI class and property names do not depend on localized counter names.
     try {
         while ($true) {
             $samples = Get-CimInstance -ClassName Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine
-            Write-GpuSample $samples Name UtilizationPercentage
+            [void](Write-GpuSample $samples Name UtilizationPercentage)
             Start-Sleep -Seconds 2
         }
     } catch {
