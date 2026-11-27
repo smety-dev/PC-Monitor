@@ -9,14 +9,23 @@ This is a proposal, not a promise of dates or version numbers.
 - Process inspection, CSV recording and offline analysis
 - Gaming overlay, PresentMon capture and frame benchmarks
 
-## In validation: v0.9.6 — International Update
+## Released: v0.9.6 — International Update
 
 - [x] English and Czech interface translations, including dialogs, charts and overlay
 - [x] Language selection with system-language fallback and saved preference
 - [x] Both languages passed the initial Windows regression tests and manual checks; CSV schemas retained
 - [x] Organize application modules, tests and build tooling into packages
 - [x] Update English website and README preview
-- [ ] Validate the reorganized Windows package before release
+- [x] Reorganized Windows package built and published; GPU sampling issue reported afterward
+
+## In validation: v0.9.7 — GPU Compatibility Hotfix
+
+- [x] PowerShell module path isolation and WMI fallback
+- [x] Original fix reported working on AMD Radeon RX 6600 XT (PR #19)
+- [x] Regression tests for GPU providers, missing samples and process environment
+- [ ] Pass Windows CI for the hotfix candidate
+- [ ] Verify source and portable EXE against Task Manager 3D load on real hardware
+- [ ] Review bundled third-party licenses and publish the hotfix
 
 ## Reliability and feedback
 

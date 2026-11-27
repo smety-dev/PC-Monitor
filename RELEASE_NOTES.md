@@ -1,4 +1,10 @@
-# PC Monitor v0.9.6 — International Update candidate
+# PC Monitor v0.9.7 — GPU Compatibility Hotfix candidate
+
+## What's fixed
+- Windows PowerShell module discovery when launched from PowerShell 7 or VS Code.
+- GPU 3D measurement with a locale-independent WMI fallback on errors or repeated missing samples.
+- GPU provider error logging without inventing utilization values.
+- The original fix was reported working on an RX 6600 XT in PR #19; final hotfix hardware and EXE validation is pending.
 
 ## Run on Windows x64
 Extract the entire archive to a local writable directory and open **PC-Monitor.exe**.
@@ -12,7 +18,7 @@ The application is unsigned; Windows SmartScreen may display a warning. Only dow
 - Persistent local preferences and Czech/English language selection. Settings apply after restarting the application; the default follows the system language (Czech or English fallback).
 
 ## Known limitations
-- Native file dialogs and raw system/PresentMon diagnostics may retain their original language. CSV headers and numeric formats remain compatible with v0.9.5.
+- Native file dialogs and raw system/PresentMon diagnostics may retain their original language. CSV headers and numeric formats remain compatible with v0.9.6.
 - Beta software. Actual game FPS capture and clean-machine compatibility require manual validation.
 - FPS capture requires Windows ETW permissions; the program does not request elevation.
 - The overlay may not appear over exclusive fullscreen games.
